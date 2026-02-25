@@ -1,30 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Lock, Eye, EyeOff, ShieldCheck, User, Loader2 } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useVerifyAdminCredentials } from '@/hooks/useQueries';
+import { verifyAdminCredentials } from '../hooks/useQueries';
 
-export const SESSION_KEY = 'admin_authenticated';
-export const LOCK_EVENT = 'admin_lock';
+export const LOCK_EVENT = 'admin-lock';
+
+const SESSION_KEY = 'admin_authenticated';
 
 interface AdminPasscodeGateProps {
   children: React.ReactNode;
 }
 
 export default function AdminPasscodeGate({ children }: AdminPasscodeGateProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem(SESSION_KEY) === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  const verifyCredentials = useVerifyAdminCredentials();
+  // Check session on mount
+  useEffect(() => {
+    const stored = sessionStorage.getItem(SESSION_KEY);
+    if (stored === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
+  // Listen for lock event
   const handleLock = useCallback(() => {
     sessionStorage.removeItem(SESSION_KEY);
     setIsAuthenticated(false);
@@ -34,37 +39,28 @@ export default function AdminPasscodeGate({ children }: AdminPasscodeGateProps) 
   }, []);
 
   useEffect(() => {
-    const onLockEvent = () => handleLock();
-    window.addEventListener(LOCK_EVENT, onLockEvent);
-    return () => window.removeEventListener(LOCK_EVENT, onLockEvent);
+    window.addEventListener(LOCK_EVENT, handleLock);
+    return () => window.removeEventListener(LOCK_EVENT, handleLock);
   }, [handleLock]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsVerifying(true);
     setError(null);
 
-    if (!username.trim()) {
-      setError('Please enter your username.');
-      return;
-    }
-    if (!password) {
-      setError('Please enter your password.');
-      return;
-    }
-
     try {
-      const isValid = await verifyCredentials.mutateAsync({ username: username.trim(), password });
+      const isValid = verifyAdminCredentials(username, password);
       if (isValid) {
         sessionStorage.setItem(SESSION_KEY, 'true');
         setIsAuthenticated(true);
-        setError(null);
       } else {
-        setError('Invalid username or password.');
-        setPassword('');
+        setError('Invalid username or password. Please try again.');
       }
-    } catch {
-      setError('Unable to verify credentials. Please try again.');
-      setPassword('');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Verification failed';
+      setError(`Login error: ${message}`);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -73,112 +69,94 @@ export default function AdminPasscodeGate({ children }: AdminPasscodeGateProps) 
   }
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4 py-12 animate-fade-in">
-      <Card className="w-full max-w-md shadow-elevated">
-        <CardHeader className="text-center space-y-3 pb-4">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <ShieldCheck className="h-8 w-8 text-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-sm space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <ShieldCheck className="h-7 w-7 text-primary" />
           </div>
-          <CardTitle className="font-display text-2xl font-bold">Admin Login</CardTitle>
-          <CardDescription className="text-base">
-            Enter your admin credentials to access the Admin Panel.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username */}
-            <div className="space-y-2">
-              <Label htmlFor="admin-username" className="font-semibold">
-                Username
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="admin-username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    if (error) setError(null);
-                  }}
-                  placeholder="Enter username"
-                  className="h-12 pl-10 text-base"
-                  autoFocus
-                  autoComplete="username"
-                  disabled={verifyCredentials.isPending}
-                />
-              </div>
-            </div>
+          <h1 className="text-2xl font-bold font-display text-foreground">Admin Portal</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your admin credentials to access the portal.
+          </p>
+        </div>
 
-            {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="admin-password" className="font-semibold">
-                Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="admin-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (error) setError(null);
-                  }}
-                  placeholder="Enter password"
-                  className="h-12 pl-10 pr-12 text-base"
-                  autoComplete="current-password"
-                  disabled={verifyCredentials.isPending}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="admin-username">Username</Label>
+            <Input
+              id="admin-username"
+              type="text"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Enter username"
+              disabled={isVerifying}
+              autoComplete="username"
+            />
+          </div>
 
-            {error && (
-              <Alert variant="destructive" className="py-2">
-                <Lock className="h-4 w-4" />
-                <AlertDescription className="text-sm">{error}</AlertDescription>
-              </Alert>
+          <div className="space-y-2">
+            <Label htmlFor="admin-password">Password</Label>
+            <div className="relative">
+              <Input
+                id="admin-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="Enter password"
+                disabled={isVerifying}
+                autoComplete="current-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <Lock className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isVerifying || !username || !password}
+          >
+            {isVerifying ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              <>
+                <Lock className="mr-2 h-4 w-4" />
+                Sign In
+              </>
             )}
+          </Button>
+        </form>
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-base font-semibold"
-              disabled={verifyCredentials.isPending}
-            >
-              {verifyCredentials.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Login to Admin Panel
-                </>
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 p-3 rounded-lg bg-muted/60 border border-border text-center">
-            <p className="text-xs text-muted-foreground">
-              Default credentials are shown on the{' '}
-              <a href="/" className="text-primary font-semibold hover:underline">
-                Home Page
-              </a>
-              .
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        <p className="text-center text-xs text-muted-foreground">
+          Default credentials: admin / admin1234
+        </p>
+      </div>
     </div>
   );
 }

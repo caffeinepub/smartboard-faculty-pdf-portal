@@ -1,60 +1,70 @@
 import React, { useState } from 'react';
-import { Plus, Loader2, Users, FileText, AlertCircle, LogOut, KeyRound } from 'lucide-react';
+import AdminPasscodeGate, { LOCK_EVENT } from '../components/AdminPasscodeGate';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import PDFUploadForm from '@/components/PDFUploadForm';
-import PDFListTable from '@/components/PDFListTable';
-import SubscriptionSection from '@/components/SubscriptionSection';
-import FacultyManagementTable from '@/components/FacultyManagementTable';
-import DeviceManagementSection from '@/components/DeviceManagementSection';
-import CreateFacultyModal from '@/components/CreateFacultyModal';
-import AdminPasscodeGate, { LOCK_EVENT } from '@/components/AdminPasscodeGate';
-import ChangeAdminCredentialsForm from '@/components/ChangeAdminCredentialsForm';
-import { useAllFacultyAdmin, useAddFaculty, useAllPDFs, PLAN_TIERS } from '@/hooks/useQueries';
-import type { Faculty } from '@/backend';
+import {
+  Settings,
+  Users,
+  FileText,
+  CreditCard,
+  Monitor,
+  KeyRound,
+  Plus,
+  LogOut,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
+import FacultyManagementTable from '../components/FacultyManagementTable';
+import PDFUploadForm from '../components/PDFUploadForm';
+import PDFListTable from '../components/PDFListTable';
+import SubscriptionSection from '../components/SubscriptionSection';
+import DeviceManagementSection from '../components/DeviceManagementSection';
+import ChangeAdminCredentialsForm from '../components/ChangeAdminCredentialsForm';
+import CreateFacultyModal from '../components/CreateFacultyModal';
+import {
+  useAllFacultyAdmin,
+  useAllPDFs,
+  useAddFaculty,
+  PLAN_TIERS,
+  type Faculty,
+} from '../hooks/useQueries';
 
 function parseInlineError(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);
   const lower = raw.toLowerCase();
-
-  if (
-    (lower.includes('subscription limit') && lower.includes('faculty')) ||
-    (lower.includes('limit reached') && lower.includes('faculty')) ||
-    lower.includes('faculty limit')
-  ) {
+  if (lower.includes('limit reached') || lower.includes('faculty limit')) {
     return 'Faculty limit reached for your current plan. Please upgrade.';
   }
-  if (lower.includes('unauthorized') || lower.includes('only admins')) {
+  if (lower.includes('unauthorized') || lower.includes('only admins') || lower.includes('admin-only')) {
     return 'Admin access required to add faculty members.';
   }
   if (lower.includes('name cannot be empty') || lower.includes('empty or whitespace')) {
     return 'Faculty name cannot be empty.';
   }
-  return 'Failed to add faculty. Please try again.';
+  if (lower.includes('already exists') || lower.includes('duplicate')) {
+    return 'A faculty member with this name already exists.';
+  }
+  return raw || 'Failed to add faculty. Please try again.';
 }
 
 function AdminPanelContent() {
   const [newFacultyName, setNewFacultyName] = useState('');
   const [facultyError, setFacultyError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isCreateFacultyOpen, setIsCreateFacultyOpen] = useState(false);
 
-  const { data: allFaculty = [], refetch: refetchFaculty } = useAllFacultyAdmin();
-  const { data: pdfs = [], refetch: refetchPDFs } = useAllPDFs();
+  const { data: allFaculty = [] } = useAllFacultyAdmin();
+  const { data: pdfs = [] } = useAllPDFs();
   const addFaculty = useAddFaculty();
 
-  const activeFacultyCount = allFaculty.filter((f: Faculty) => f.active).length;
-  const currentPlan = PLAN_TIERS.find((p) => p.name === 'basic')!;
+  const activeFacultyCount = (allFaculty as Faculty[]).filter((f) => f.active).length;
+  const currentPlan = PLAN_TIERS.find((p) => p.name === 'basic') ?? PLAN_TIERS[0];
   const isPdfLimitReached = pdfs.length >= currentPlan.maxPdfs;
-
-  const activeFacultyList = allFaculty
-    .filter((f: Faculty) => f.active)
-    .map((f: Faculty) => ({ id: f.id, name: f.name }));
 
   const handleLockSignOut = () => {
     window.dispatchEvent(new Event(LOCK_EVENT));
@@ -69,18 +79,20 @@ function AdminPanelContent() {
       return;
     }
     try {
-      await addFaculty.mutateAsync(name);
-      setNewFacultyName('');
-      setFacultyError(null);
+      const result = await addFaculty.mutateAsync(name);
+      if (result.__kind__ === 'success') {
+        setNewFacultyName('');
+        setFacultyError(null);
+      } else if (result.__kind__ === 'limitReached') {
+        setFacultyError(
+          `Faculty limit of ${result.limit} reached. Please upgrade your plan.`
+        );
+      } else if (result.__kind__ === 'error') {
+        setFacultyError(result.message || 'Failed to add faculty. Please try again.');
+      }
     } catch (err: unknown) {
       setFacultyError(parseInlineError(err));
     }
-  };
-
-  const handleUploadSuccess = () => {
-    setUploadSuccess(true);
-    refetchPDFs();
-    setTimeout(() => setUploadSuccess(false), 3000);
   };
 
   return (
@@ -88,11 +100,16 @@ function AdminPanelContent() {
       <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8 animate-fade-in">
         {/* Page Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">Admin Panel</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage faculty members, upload teaching materials, and monitor your subscription.
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Settings className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-display text-3xl font-bold text-foreground">Admin Panel</h1>
+              <p className="text-muted-foreground mt-0.5">
+                Manage faculty members, upload teaching materials, and monitor your subscription.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="secondary" className="text-sm px-3 py-1.5">
@@ -116,10 +133,31 @@ function AdminPanelContent() {
         </div>
 
         {/* Subscription Section */}
-        <SubscriptionSection allFaculty={allFaculty} pdfCount={pdfs.length} />
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-display font-semibold text-foreground">Subscription</h2>
+          </div>
+          <SubscriptionSection
+            facultyCount={activeFacultyCount}
+            pdfCount={pdfs.length}
+          />
+        </section>
+
+        <Separator />
 
         {/* Device Management Section */}
-        <DeviceManagementSection />
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <Monitor className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-display font-semibold text-foreground">
+              Device Management
+            </h2>
+          </div>
+          <DeviceManagementSection />
+        </section>
+
+        <Separator />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column: Add Faculty + PDF Upload */}
@@ -131,9 +169,7 @@ function AdminPanelContent() {
                   <Users className="h-5 w-5 text-accent" />
                   Add Faculty Member
                 </CardTitle>
-                <CardDescription>
-                  Add a new faculty member to the system.
-                </CardDescription>
+                <CardDescription>Add a new faculty member to the system.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddFaculty} className="space-y-3">
@@ -189,19 +225,18 @@ function AdminPanelContent() {
             </Card>
 
             {/* PDF Upload */}
-            <PDFUploadForm
-              facultyList={activeFacultyList}
-              onSuccess={handleUploadSuccess}
-              disabled={isPdfLimitReached}
-            />
-
-            {uploadSuccess && (
-              <Alert className="border-green-500/40 bg-green-500/10 py-2">
-                <AlertDescription className="text-sm text-green-700 dark:text-green-400">
-                  PDF uploaded successfully!
-                </AlertDescription>
-              </Alert>
-            )}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <FileText className="h-5 w-5 text-accent" />
+                  Upload PDF
+                </CardTitle>
+                <CardDescription>Upload a PDF and assign it to faculty members.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PDFUploadForm disabled={isPdfLimitReached} />
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column: Faculty Management + PDF List */}
@@ -212,20 +247,29 @@ function AdminPanelContent() {
         </div>
 
         {/* Change Admin Credentials Section */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <KeyRound className="h-5 w-5 text-accent" />
-              Change Admin Credentials
-            </CardTitle>
-            <CardDescription>
-              Update the admin username and password used to access this panel.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="max-w-md">
-            <ChangeAdminCredentialsForm />
-          </CardContent>
-        </Card>
+        <Separator />
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <KeyRound className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-display font-semibold text-foreground">
+              Admin Credentials
+            </h2>
+          </div>
+          <Card className="shadow-card max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <KeyRound className="h-5 w-5 text-accent" />
+                Change Admin Credentials
+              </CardTitle>
+              <CardDescription>
+                Update the admin username and password used to access this panel.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChangeAdminCredentialsForm />
+            </CardContent>
+          </Card>
+        </section>
       </div>
 
       <CreateFacultyModal

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import type { AnnotationTool } from './AnnotationToolbar';
-import type { Annotation } from '../backend';
+import type { LocalAnnotation } from '../hooks/useQueries';
 
 interface Point {
   x: number;
@@ -28,7 +28,7 @@ interface AnnotationCanvasProps {
   strokeSize: number;
   fillColor: string;
   currentPage: number;
-  savedAnnotations: Annotation[];
+  savedAnnotations: LocalAnnotation[];
   onAnnotationComplete: (stroke: DrawingStroke) => void;
   pendingImageData?: string | null;
   onImagePlaced?: () => void;
@@ -38,7 +38,7 @@ export interface AnnotationCanvasRef {
   clearPage: () => void;
 }
 
-function parseAnnotationCoordinates(annotation: Annotation): DrawingStroke | null {
+function parseAnnotationCoordinates(annotation: LocalAnnotation): DrawingStroke | null {
   try {
     const data = JSON.parse(annotation.coordinates);
     return {
@@ -47,7 +47,7 @@ function parseAnnotationCoordinates(annotation: Annotation): DrawingStroke | nul
       color: data.color ?? '#1a2744',
       size: data.size ?? 3,
       text: data.text,
-      page: Number(annotation.pageNumber),
+      page: annotation.pageNumber,
       endX: annotation.endX ?? data.endX,
       endY: annotation.endY ?? data.endY,
       imageData: annotation.imageData ?? data.imageData,
@@ -231,7 +231,6 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       if (stroke.imageData) {
         const img = new Image();
         img.onload = () => {
-          // Draw image at start point, scaled to reasonable size
           const maxW = 300;
           const maxH = 300;
           const scale = Math.min(maxW / img.width, maxH / img.height, 1);
@@ -377,7 +376,6 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       currentStrokeRef.current = [point];
 
       if (!isShapeTool(activeTool)) {
-        // Draw initial dot for freehand tools
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -408,20 +406,17 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       const point = getCanvasPoint(e);
 
       if (isShapeTool(activeTool)) {
-        // For shape tools, redraw canvas + preview shape
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Redraw existing strokes
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const strokes = pageStrokes.get(currentPage) ?? [];
         for (const stroke of strokes) {
           drawStroke(ctx, stroke);
         }
 
-        // Draw preview
         if (dragStartRef.current) {
           const previewStroke: DrawingStroke = {
             tool: activeTool,
@@ -529,6 +524,12 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
         page: currentPage,
       };
 
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) drawStroke(ctx, stroke);
+      }
+
       setPageStrokes((prev) => {
         const next = new Map(prev);
         const existing = next.get(currentPage) ?? [];
@@ -541,22 +542,42 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       setTextInput('');
     };
 
-    // Cursor style based on active tool
-    const getCursor = () => {
-      if (activeTool === 'eraser') return 'cell';
-      if (activeTool === 'text') return 'text';
-      if (activeTool === 'image') return pendingImageData ? 'copy' : 'default';
-      return 'crosshair';
+    // Resize canvas to fill container
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const parent = canvas.parentElement;
+      if (!parent) return;
+
+      const resizeObserver = new ResizeObserver(() => {
+        const { width: w, height: h } = parent.getBoundingClientRect();
+        if (canvas.width !== Math.floor(w) || canvas.height !== Math.floor(h)) {
+          canvas.width = Math.floor(w);
+          canvas.height = Math.floor(h);
+          redrawCanvas();
+        }
+      });
+
+      resizeObserver.observe(parent);
+      return () => resizeObserver.disconnect();
+    }, [redrawCanvas]);
+
+    const cursorStyle = (): string => {
+      switch (activeTool) {
+        case 'eraser': return 'cursor-cell';
+        case 'text': return 'cursor-text';
+        case 'image': return pendingImageData ? 'cursor-crosshair' : 'cursor-default';
+        default: return 'cursor-crosshair';
+      }
     };
 
     return (
-      <div className="relative" style={{ width, height }}>
+      <div className="relative w-full h-full">
         <canvas
           ref={canvasRef}
-          width={width}
-          height={height}
-          className="annotation-canvas absolute inset-0"
-          style={{ width: '100%', height: '100%', cursor: getCursor() }}
+          width={width || 800}
+          height={height || 600}
+          className={`absolute inset-0 w-full h-full touch-none ${cursorStyle()}`}
           onMouseDown={startDrawing}
           onMouseMove={continueDrawing}
           onMouseUp={endDrawing}
@@ -570,45 +591,28 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
         {pendingText && (
           <div
             className="absolute z-10"
-            style={{
-              left: (pendingText.x / width) * 100 + '%',
-              top: (pendingText.y / height) * 100 + '%',
-              transform: 'translate(0, -50%)',
-            }}
+            style={{ left: pendingText.x, top: pendingText.y }}
           >
-            <div className="flex items-center gap-2 bg-card border shadow-elevated rounded-lg p-2">
-              <input
-                autoFocus
-                type="text"
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleTextSubmit();
-                  if (e.key === 'Escape') setPendingText(null);
-                }}
-                placeholder="Type annotation..."
-                className="border rounded px-2 py-1 text-sm min-w-[200px] bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                onClick={handleTextSubmit}
-                className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm font-medium hover:opacity-90"
-              >
-                Add
-              </button>
-              <button
-                onClick={() => setPendingText(null)}
-                className="px-2 py-1 text-muted-foreground hover:text-foreground text-sm"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Image placement hint */}
-        {activeTool === 'image' && pendingImageData && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-primary text-primary-foreground text-xs px-3 py-1.5 rounded-full shadow-md pointer-events-none">
-            Click anywhere to place the image
+            <input
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleTextSubmit();
+                if (e.key === 'Escape') {
+                  setPendingText(null);
+                  setTextInput('');
+                }
+              }}
+              onBlur={handleTextSubmit}
+              autoFocus
+              className="bg-transparent border-b-2 border-primary outline-none text-foreground px-1 min-w-[120px]"
+              style={{
+                fontSize: `${strokeSize * 4 + 12}px`,
+                color: strokeColor,
+              }}
+              placeholder="Type here..."
+            />
           </div>
         )}
       </div>

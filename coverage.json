@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T17:46:37.386Z",
+  "generatedAt": "2026-02-25T18:47:03.858Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,36 +11,36 @@
     "implemented": 2,
     "items": [
       {
-        "id": "REQ-43",
-        "summary": "Add a backend data model and functions for admin credentials. Store a single admin record containing a username and a hashed (or securely compared) password in stable state. Provide a backend function `setAdminCredentials(username: Text, password: Text) : async Result` to create or update admin credentials, and a function `verifyAdminCredentials(username: Text, password: Text) : async Bool` that returns true when the supplied username and password match the stored credentials. Initialize stable state with a default admin username of 'admin' and password 'admin1234' so the system is accessible on first deploy.",
+        "id": "REQ-51",
+        "summary": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members. Audit the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) and the `useUploadPDF` mutation hook in `frontend/src/hooks/useQueries.ts` to identify why the assignment fails: (1) verify the faculty selector inside the form correctly populates the list of active faculty members from the backend; (2) ensure the selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call; (3) ensure no pre-flight admin credential re-check short-circuits the submission before the backend is contacted; (4) ensure the backend `uploadPDF` function in `backend/main.mo` accepts the faculty assignment parameter and persists the assignment without requiring a secondary authorization token — the sessionStorage flag set by AdminPasscodeGate is the sole auth signal; (5) after a successful upload, invalidate and refetch the PDF list query so the table reflects the newly assigned PDF immediately.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/PDFUploadForm.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/PDFUploadForm.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-52",
+        "summary": "Audit the backend `uploadPDF` function in `backend/main.mo` to ensure it does not enforce any caller-identity or admin-only access control check that would reject the call when invoked from the already-authenticated Admin Panel session. The function must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant. Remove or disable any `assert`, `isAdmin` check, or caller-principal guard that causes it to return an authorization error.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-44",
-        "summary": "Replace the hardcoded passcode check in the AdminPasscodeGate component (`frontend/src/components/AdminPasscodeGate.tsx`) and the Admin Panel route with a proper username + password login form. The form must have two fields: a 'Username' text input and a 'Password' password input. On submission, call the backend `verifyAdminCredentials` function. If it returns true, persist the authenticated state in sessionStorage and show the Admin Panel. If it returns false, display an inline error message 'Invalid username or password.' Do not allow access until valid credentials are confirmed by the backend. The 'Lock / Sign Out' button in the Admin Panel header must continue to clear the sessionStorage session and return the user to the login form. On the Home Page (`frontend/src/pages/HomePage.tsx`), update the admin access notice to display the default credentials (username: admin, password: admin1234) so users know how to log in.",
+        "id": "REQ-53",
+        "summary": "Update the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) so that: (1) the faculty multi-select field fetches and renders the current list of active faculty members from the backend on mount; (2) the user can select one or more faculty members before submitting; (3) the `useUploadPDF` mutation in `frontend/src/hooks/useQueries.ts` calls `actor.uploadPDF(title, base64Content, selectedFacultyIds)` without any additional admin credential argument; (4) on success, the PDF list query is invalidated and refetched; (5) on failure, the specific error returned by the backend (e.g., PDF limit exceeded) is shown inline in the form.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AdminPasscodeGate.tsx",
-          "frontend/src/pages/HomePage.tsx"
+          "frontend/src/components/PDFUploadForm.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/AdminPasscodeGate.tsx",
-          "frontend/src/pages/HomePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-45",
-        "summary": "Add a 'Change Admin Credentials' section inside the Admin Panel (visible only after successful login). This section must contain a form with three fields: 'New Username', 'New Password', and 'Confirm Password'. On submission, validate that the new username is non-empty, the password is at least 6 characters, and the two password fields match. If valid, call the backend `setAdminCredentials` function to update the stored credentials and display a success message. If validation fails, display appropriate inline error messages. Clear the form fields after a successful update.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/ChangeAdminCredentialsForm.tsx",
-          "frontend/src/pages/AdminPanel.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/ChangeAdminCredentialsForm.tsx",
-          "frontend/src/pages/AdminPanel.tsx"
+          "frontend/src/components/PDFUploadForm.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       }
     ]
@@ -55,12 +55,21 @@
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
     "frontend/src/components/AdminPasscodeGate.tsx",
+    "frontend/src/components/AnnotationCanvas.tsx",
     "frontend/src/components/ChangeAdminCredentialsForm.tsx",
+    "frontend/src/components/FacultyManagementTable.tsx",
+    "frontend/src/components/FacultyPDFList.tsx",
+    "frontend/src/components/FacultySelector.tsx",
+    "frontend/src/components/PDFListTable.tsx",
+    "frontend/src/components/PDFUploadForm.tsx",
+    "frontend/src/context/FacultyContext.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/AdminPanel.tsx",
-    "frontend/src/pages/HomePage.tsx",
+    "frontend/src/pages/DeveloperPortal.tsx",
+    "frontend/src/pages/FacultyPortal.tsx",
+    "frontend/src/pages/TeachingView.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

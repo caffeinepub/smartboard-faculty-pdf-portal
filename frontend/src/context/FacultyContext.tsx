@@ -1,19 +1,19 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface FacultyContextType {
-  selectedFacultyId: bigint | null;
+  selectedFacultyId: number | null;
   selectedFacultyName: string | null;
-  setSelectedFaculty: (id: bigint, name: string) => void;
+  setSelectedFaculty: (id: number, name: string) => void;
   clearSelectedFaculty: () => void;
 }
 
 const FacultyContext = createContext<FacultyContextType | undefined>(undefined);
 
 export function FacultyProvider({ children }: { children: ReactNode }) {
-  const [selectedFacultyId, setSelectedFacultyId] = useState<bigint | null>(null);
+  const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
   const [selectedFacultyName, setSelectedFacultyName] = useState<string | null>(null);
 
-  const setSelectedFaculty = (id: bigint, name: string) => {
+  const setSelectedFaculty = (id: number, name: string) => {
     setSelectedFacultyId(id);
     setSelectedFacultyName(name);
   };

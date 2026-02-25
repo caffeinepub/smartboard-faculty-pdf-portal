@@ -89,7 +89,19 @@ export class ExternalBlob {
         return this;
     }
 }
+export type AnnotationUpdateResult = {
+    __kind__: "error";
+    error: string;
+} | {
+    __kind__: "success";
+    success: null;
+};
+export interface SyncState {
+    unsyncedChanges: bigint;
+    lastSyncTimestamp: bigint;
+}
 export interface Annotation {
+    id: bigint;
     fillColor?: string;
     imageData?: string;
     endX?: number;
@@ -101,33 +113,27 @@ export interface Annotation {
     shapeType?: string;
     coordinates: string;
 }
-export type FacultyCreateResult = {
+export type SyncResult = {
     __kind__: "error";
     error: string;
 } | {
-    __kind__: "limitReached";
-    limitReached: bigint;
+    __kind__: "success";
+    success: SyncState;
+};
+export type AnnotationCreateResult = {
+    __kind__: "error";
+    error: string;
 } | {
     __kind__: "success";
     success: null;
 };
-export interface Faculty {
-    id: bigint;
-    active: boolean;
-    name: string;
-}
-export interface PDF {
-    id: bigint;
-    title: string;
-    content: string;
-    taught: boolean;
-    uploadDate: bigint;
-    facultyIds: Array<bigint>;
-}
-export interface FacultyWithPdfCount {
-    faculty: Faculty;
-    pdfCount: bigint;
-}
+export type AnnotationDeleteResult = {
+    __kind__: "error";
+    error: string;
+} | {
+    __kind__: "success";
+    success: null;
+};
 export interface UserProfile {
     name: string;
 }
@@ -138,24 +144,18 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    addAnnotation(annotation: Annotation): Promise<AnnotationCreateResult>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    createFaculty(name: string): Promise<FacultyCreateResult>;
-    getAllFacultyWithPdfCount(): Promise<Array<FacultyWithPdfCount>>;
-    getAnnotationsByPDF(pdfId: bigint): Promise<Array<Annotation>>;
+    deleteAnnotation(_annotationId: bigint): Promise<AnnotationDeleteResult>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
-    getFaculty(): Promise<Array<Faculty>>;
-    getPDFsByFaculty(facultyId: bigint): Promise<Array<PDF>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
-    markAsTaught(pdfId: bigint): Promise<void>;
-    resetAdminCredentials(): Promise<boolean>;
-    saveAnnotation(pdfId: bigint, pageNumber: bigint, annotationType: string, coordinates: string, endX: number | null, endY: number | null, imageData: string | null, shapeType: string | null, fillColor: string | null): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    setAdminCredentials(username: string, password: string): Promise<boolean>;
-    verifyAdminCredentials(username: string, password: string): Promise<boolean>;
+    syncAnnotations(): Promise<SyncResult>;
+    updateAnnotation(_annotation: Annotation): Promise<AnnotationUpdateResult>;
 }
-import type { Annotation as _Annotation, FacultyCreateResult as _FacultyCreateResult, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { Annotation as _Annotation, AnnotationCreateResult as _AnnotationCreateResult, AnnotationDeleteResult as _AnnotationDeleteResult, AnnotationUpdateResult as _AnnotationUpdateResult, SyncResult as _SyncResult, SyncState as _SyncState, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -172,130 +172,88 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async addAnnotation(arg0: Annotation): Promise<AnnotationCreateResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addAnnotation(to_candid_Annotation_n1(this._uploadFile, this._downloadFile, arg0));
+                return from_candid_AnnotationCreateResult_n3(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addAnnotation(to_candid_Annotation_n1(this._uploadFile, this._downloadFile, arg0));
+            return from_candid_AnnotationCreateResult_n3(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n5(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n5(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
-    async createFaculty(arg0: string): Promise<FacultyCreateResult> {
+    async deleteAnnotation(arg0: bigint): Promise<AnnotationDeleteResult> {
         if (this.processError) {
             try {
-                const result = await this.actor.createFaculty(arg0);
-                return from_candid_FacultyCreateResult_n3(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.deleteAnnotation(arg0);
+                return from_candid_AnnotationDeleteResult_n7(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createFaculty(arg0);
-            return from_candid_FacultyCreateResult_n3(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAllFacultyWithPdfCount(): Promise<Array<FacultyWithPdfCount>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllFacultyWithPdfCount();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllFacultyWithPdfCount();
-            return result;
-        }
-    }
-    async getAnnotationsByPDF(arg0: bigint): Promise<Array<Annotation>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAnnotationsByPDF(arg0);
-                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAnnotationsByPDF(arg0);
-            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.deleteAnnotation(arg0);
+            return from_candid_AnnotationDeleteResult_n7(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n9(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n11(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getFaculty(): Promise<Array<Faculty>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getFaculty();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getFaculty();
-            return result;
-        }
-    }
-    async getPDFsByFaculty(arg0: bigint): Promise<Array<PDF>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getPDFsByFaculty(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getPDFsByFaculty(arg0);
-            return result;
+            return from_candid_UserRole_n9(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -309,48 +267,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
-            return result;
-        }
-    }
-    async markAsTaught(arg0: bigint): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.markAsTaught(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.markAsTaught(arg0);
-            return result;
-        }
-    }
-    async resetAdminCredentials(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.resetAdminCredentials();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.resetAdminCredentials();
-            return result;
-        }
-    }
-    async saveAnnotation(arg0: bigint, arg1: bigint, arg2: string, arg3: string, arg4: number | null, arg5: number | null, arg6: string | null, arg7: string | null, arg8: string | null): Promise<bigint> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.saveAnnotation(arg0, arg1, arg2, arg3, to_candid_opt_n13(this._uploadFile, this._downloadFile, arg4), to_candid_opt_n13(this._uploadFile, this._downloadFile, arg5), to_candid_opt_n14(this._uploadFile, this._downloadFile, arg6), to_candid_opt_n14(this._uploadFile, this._downloadFile, arg7), to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.saveAnnotation(arg0, arg1, arg2, arg3, to_candid_opt_n13(this._uploadFile, this._downloadFile, arg4), to_candid_opt_n13(this._uploadFile, this._downloadFile, arg5), to_candid_opt_n14(this._uploadFile, this._downloadFile, arg6), to_candid_opt_n14(this._uploadFile, this._downloadFile, arg7), to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8));
             return result;
         }
     }
@@ -368,65 +284,108 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async setAdminCredentials(arg0: string, arg1: string): Promise<boolean> {
+    async syncAnnotations(): Promise<SyncResult> {
         if (this.processError) {
             try {
-                const result = await this.actor.setAdminCredentials(arg0, arg1);
-                return result;
+                const result = await this.actor.syncAnnotations();
+                return from_candid_SyncResult_n11(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.setAdminCredentials(arg0, arg1);
-            return result;
+            const result = await this.actor.syncAnnotations();
+            return from_candid_SyncResult_n11(this._uploadFile, this._downloadFile, result);
         }
     }
-    async verifyAdminCredentials(arg0: string, arg1: string): Promise<boolean> {
+    async updateAnnotation(arg0: Annotation): Promise<AnnotationUpdateResult> {
         if (this.processError) {
             try {
-                const result = await this.actor.verifyAdminCredentials(arg0, arg1);
-                return result;
+                const result = await this.actor.updateAnnotation(to_candid_Annotation_n1(this._uploadFile, this._downloadFile, arg0));
+                return from_candid_AnnotationUpdateResult_n13(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.verifyAdminCredentials(arg0, arg1);
-            return result;
+            const result = await this.actor.updateAnnotation(to_candid_Annotation_n1(this._uploadFile, this._downloadFile, arg0));
+            return from_candid_AnnotationUpdateResult_n13(this._uploadFile, this._downloadFile, result);
         }
     }
 }
-function from_candid_Annotation_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Annotation): Annotation {
-    return from_candid_record_n7(_uploadFile, _downloadFile, value);
-}
-function from_candid_FacultyCreateResult_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _FacultyCreateResult): FacultyCreateResult {
+function from_candid_AnnotationCreateResult_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnnotationCreateResult): AnnotationCreateResult {
     return from_candid_variant_n4(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+function from_candid_AnnotationDeleteResult_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnnotationDeleteResult): AnnotationDeleteResult {
+    return from_candid_variant_n4(_uploadFile, _downloadFile, value);
+}
+function from_candid_AnnotationUpdateResult_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnnotationUpdateResult): AnnotationUpdateResult {
+    return from_candid_variant_n4(_uploadFile, _downloadFile, value);
+}
+function from_candid_SyncResult_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SyncResult): SyncResult {
     return from_candid_variant_n12(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_UserRole_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n10(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
-    return value.length === 0 ? null : value[0];
+function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    admin: null;
+} | {
+    user: null;
+} | {
+    guest: null;
+}): UserRole {
+    return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_opt_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [number]): number | null {
-    return value.length === 0 ? null : value[0];
-}
-function from_candid_record_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    fillColor: [] | [string];
-    imageData: [] | [string];
-    endX: [] | [number];
-    endY: [] | [number];
-    pageNumber: bigint;
-    timestamp: bigint;
-    pdfId: bigint;
-    annotationType: string;
-    shapeType: [] | [string];
-    coordinates: string;
+function from_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    error: string;
+} | {
+    success: _SyncState;
 }): {
+    __kind__: "error";
+    error: string;
+} | {
+    __kind__: "success";
+    success: SyncState;
+} {
+    return "error" in value ? {
+        __kind__: "error",
+        error: value.error
+    } : "success" in value ? {
+        __kind__: "success",
+        success: value.success
+    } : value;
+}
+function from_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    error: string;
+} | {
+    success: null;
+}): {
+    __kind__: "error";
+    error: string;
+} | {
+    __kind__: "success";
+    success: null;
+} {
+    return "error" in value ? {
+        __kind__: "error",
+        error: value.error
+    } : "success" in value ? {
+        __kind__: "success",
+        success: value.success
+    } : value;
+}
+function to_candid_Annotation_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Annotation): _Annotation {
+    return to_candid_record_n2(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserRole_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
+    return to_candid_variant_n6(_uploadFile, _downloadFile, value);
+}
+function to_candid_record_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: bigint;
     fillColor?: string;
     imageData?: string;
     endX?: number;
@@ -437,69 +396,34 @@ function from_candid_record_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint
     annotationType: string;
     shapeType?: string;
     coordinates: string;
+}): {
+    id: bigint;
+    fillColor: [] | [string];
+    imageData: [] | [string];
+    endX: [] | [number];
+    endY: [] | [number];
+    pageNumber: bigint;
+    timestamp: bigint;
+    pdfId: bigint;
+    annotationType: string;
+    shapeType: [] | [string];
+    coordinates: string;
 } {
     return {
-        fillColor: record_opt_to_undefined(from_candid_opt_n8(_uploadFile, _downloadFile, value.fillColor)),
-        imageData: record_opt_to_undefined(from_candid_opt_n8(_uploadFile, _downloadFile, value.imageData)),
-        endX: record_opt_to_undefined(from_candid_opt_n9(_uploadFile, _downloadFile, value.endX)),
-        endY: record_opt_to_undefined(from_candid_opt_n9(_uploadFile, _downloadFile, value.endY)),
+        id: value.id,
+        fillColor: value.fillColor ? candid_some(value.fillColor) : candid_none(),
+        imageData: value.imageData ? candid_some(value.imageData) : candid_none(),
+        endX: value.endX ? candid_some(value.endX) : candid_none(),
+        endY: value.endY ? candid_some(value.endY) : candid_none(),
         pageNumber: value.pageNumber,
         timestamp: value.timestamp,
         pdfId: value.pdfId,
         annotationType: value.annotationType,
-        shapeType: record_opt_to_undefined(from_candid_opt_n8(_uploadFile, _downloadFile, value.shapeType)),
+        shapeType: value.shapeType ? candid_some(value.shapeType) : candid_none(),
         coordinates: value.coordinates
     };
 }
-function from_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    admin: null;
-} | {
-    user: null;
-} | {
-    guest: null;
-}): UserRole {
-    return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
-}
-function from_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    error: string;
-} | {
-    limitReached: bigint;
-} | {
-    success: null;
-}): {
-    __kind__: "error";
-    error: string;
-} | {
-    __kind__: "limitReached";
-    limitReached: bigint;
-} | {
-    __kind__: "success";
-    success: null;
-} {
-    return "error" in value ? {
-        __kind__: "error",
-        error: value.error
-    } : "limitReached" in value ? {
-        __kind__: "limitReached",
-        limitReached: value.limitReached
-    } : "success" in value ? {
-        __kind__: "success",
-        success: value.success
-    } : value;
-}
-function from_candid_vec_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Annotation>): Array<Annotation> {
-    return value.map((x)=>from_candid_Annotation_n6(_uploadFile, _downloadFile, x));
-}
-function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
-    return to_candid_variant_n2(_uploadFile, _downloadFile, value);
-}
-function to_candid_opt_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: number | null): [] | [number] {
-    return value === null ? candid_none() : candid_some(value);
-}
-function to_candid_opt_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: string | null): [] | [string] {
-    return value === null ? candid_none() : candid_some(value);
-}
-function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
+function to_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;
 } | {
     user: null;

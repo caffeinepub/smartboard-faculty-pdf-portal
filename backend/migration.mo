@@ -1,6 +1,7 @@
 import Map "mo:core/Map";
+import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
-import Int "mo:core/Int";
+import Text "mo:core/Text";
 
 module {
   type OldFaculty = {
@@ -31,37 +32,37 @@ module {
     fillColor : ?Text;
   };
 
-  type OldActor = {
-    faculty : Map.Map<Nat, OldFaculty>;
-    pdfs : Map.Map<Nat, OldPDF>;
-    annotations : Map.Map<Nat, OldAnnotation>;
-    nextFacultyId : Nat;
-    nextPdfId : Nat;
-    nextAnnotationId : Nat;
-  };
-
-  type AdminCredentials = {
+  type OldAdminCredentials = {
     username : Text;
     password : Text;
   };
 
-  type NewActor = {
-    faculty : Map.Map<Nat, OldFaculty>;
-    pdfs : Map.Map<Nat, OldPDF>;
-    annotations : Map.Map<Nat, OldAnnotation>;
-    nextFacultyId : Nat;
-    nextPdfId : Nat;
-    nextAnnotationId : Nat;
-    adminCredentials : AdminCredentials;
+  type OldUserProfile = {
+    name : Text;
   };
 
-  public func run(old : OldActor) : NewActor {
+  type OldActor = {
+    var userProfiles : Map.Map<Principal, OldUserProfile>;
+    var faculty : Map.Map<Nat, OldFaculty>;
+    var pdfs : Map.Map<Nat, OldPDF>;
+    var annotations : Map.Map<Nat, OldAnnotation>;
+    var nextFacultyId : Nat;
+    var nextPdfId : Nat;
+    var nextAnnotationId : Nat;
+    var adminCredentials : OldAdminCredentials;
+  };
+
+  type NewUserProfile = {
+    name : Text;
+  };
+
+  type NewActor = {
+    var currentUserProfiles : Map.Map<Principal, NewUserProfile>;
+  };
+
+  public func run(_old : OldActor) : NewActor {
     {
-      old with
-      adminCredentials = {
-        username = "admin";
-        password = "admin1234";
-      };
+      var currentUserProfiles = Map.empty<Principal, NewUserProfile>();
     };
   };
 };

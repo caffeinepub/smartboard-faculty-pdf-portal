@@ -10,15 +10,12 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  MessageSquare,
   Monitor,
   Crown,
-  PenLine,
   UserCheck,
   UserX,
   Zap,
   Gem,
-  AlertTriangle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,35 +32,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  useIsAdmin,
   useAllFacultyWithPdfCount,
   useGetDevices,
-  useAnnotationsByPDF,
   useAllPDFs,
   PLAN_TIERS,
   type BillingCycle,
+  type DeviceRecord,
+  type FacultyWithPdfCount,
+  type PDF,
 } from '@/hooks/useQueries';
-import type { Annotation, PDF, FacultyWithPdfCount } from '../backend';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(timestamp: bigint): string {
-  const ms = Number(timestamp) / 1_000_000;
-  return new Date(ms).toLocaleDateString('en-IN', {
+function formatDate(timestamp: number): string {
+  if (!timestamp) return '—';
+  return new Date(timestamp).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  });
-}
-
-function formatDateTime(timestamp: bigint): string {
-  const ms = Number(timestamp) / 1_000_000;
-  return new Date(ms).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
@@ -195,7 +181,7 @@ function FacultyTab() {
             </TableHeader>
             <TableBody>
               {facultyList.map((item: FacultyWithPdfCount, idx: number) => (
-                <TableRow key={item.faculty.id.toString()} className="hover:bg-muted/20">
+                <TableRow key={item.faculty.id} className="hover:bg-muted/20">
                   <TableCell className="text-muted-foreground text-sm font-mono">{idx + 1}</TableCell>
                   <TableCell className="font-medium text-foreground">
                     <div className="flex items-center gap-2">
@@ -219,15 +205,13 @@ function FacultyTab() {
                     )}
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1.5">
+                    <div className="inline-flex items-center gap-1 text-sm">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="font-semibold text-sm">{Number(item.pdfCount)}</span>
+                      {item.pdfCount}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">
-                      #{item.faculty.id.toString()}
-                    </code>
+                  <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                    #{item.faculty.id}
                   </TableCell>
                 </TableRow>
               ))}
@@ -241,331 +225,59 @@ function FacultyTab() {
 
 // ─── PDFs Tab ─────────────────────────────────────────────────────────────────
 
-function PDFsTab({
-  allPDFs,
-  isLoading,
-  isError,
-  refetch,
-  isFetching,
-  facultyMap,
-}: {
-  allPDFs: PDF[];
-  isLoading: boolean;
-  isError: boolean;
-  refetch: () => void;
-  isFetching: boolean;
-  facultyMap: Map<string, string>;
-}) {
-  const [search, setSearch] = useState('');
-
-  const filtered = allPDFs.filter((pdf) =>
-    pdf.title.toLowerCase().includes(search.toLowerCase())
-  );
+function PDFsTab() {
+  const { data: pdfs = [], isLoading, isError, refetch, isFetching } = useAllPDFs();
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h3 className="font-semibold text-base flex items-center gap-2 text-foreground">
-          <BookOpen className="h-4 w-4 text-primary" />
-          All PDFs
-        </h3>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search by title…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 w-48"
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refetch}
-            disabled={isFetching}
-            className="gap-1.5 h-8 text-xs"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
+      <SectionHeader title="All PDFs" icon={FileText} onRefresh={refetch} isFetching={isFetching} />
       {isLoading ? (
         <SectionSkeleton rows={5} />
       ) : isError ? (
         <SectionError onRetry={refetch} />
-      ) : filtered.length === 0 ? (
+      ) : pdfs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-          <FileText className="h-10 w-10 opacity-30" />
-          <p className="text-sm font-medium">
-            {search ? 'No PDFs match your search' : 'No PDFs uploaded yet'}
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-lg border border-border overflow-hidden overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-[200px]">Title</TableHead>
-                <TableHead>Assigned Faculty</TableHead>
-                <TableHead className="whitespace-nowrap">Upload Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((pdf) => {
-                const facultyNames = pdf.facultyIds
-                  .map((id) => facultyMap.get(id.toString()) ?? `Faculty #${id}`)
-                  .join(', ');
-                return (
-                  <TableRow key={pdf.id.toString()} className="hover:bg-muted/20">
-                    <TableCell className="font-medium text-foreground max-w-[200px]">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary/60 shrink-0" />
-                        <span className="truncate">{pdf.title}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[180px]">
-                      {pdf.facultyIds.length === 0 ? (
-                        <span className="italic text-xs">Unassigned</span>
-                      ) : (
-                        <span className="truncate block">{facultyNames}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                      {formatDate(pdf.uploadDate)}
-                    </TableCell>
-                    <TableCell>
-                      {pdf.taught ? (
-                        <Badge className="bg-success/15 text-success border-success/30 gap-1 text-xs">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Taught
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
-                          <Clock className="h-3 w-3" />
-                          Pending
-                        </Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Annotations Tab ──────────────────────────────────────────────────────────
-
-function AnnotationsTab({
-  allPDFs,
-  pdfsLoading,
-}: {
-  allPDFs: PDF[];
-  pdfsLoading: boolean;
-}) {
-  // Collect all annotations from all PDFs using the first PDF's annotations as a sample
-  // Since the backend only supports per-PDF annotation queries, we show a summary
-  const pdfTitleMap = new Map<string, string>();
-  allPDFs.forEach((pdf) => {
-    pdfTitleMap.set(pdf.id.toString(), pdf.title);
-  });
-
-  if (pdfsLoading) {
-    return (
-      <div>
-        <SectionHeader title="All Annotations" icon={PenLine} onRefresh={() => {}} isFetching={false} />
-        <SectionSkeleton rows={6} />
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-base flex items-center gap-2 text-foreground">
-          <PenLine className="h-4 w-4 text-primary" />
-          Annotations Overview
-        </h3>
-      </div>
-      <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-        <PenLine className="h-10 w-10 opacity-30" />
-        <p className="text-sm font-medium">Select a PDF from the PDFs tab to view its annotations</p>
-        <p className="text-xs text-center max-w-xs">
-          Annotations are stored per-PDF. Navigate to the Teaching View to see and add annotations for a specific PDF.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Subscription Tab ─────────────────────────────────────────────────────────
-
-function SubscriptionTab({
-  facultyCount,
-  pdfCount,
-}: {
-  facultyCount: number;
-  pdfCount: number;
-}) {
-  const selectedPlan = getSelectedPlan();
-  const planTier = PLAN_TIERS.find((p) => p.name === selectedPlan.planName) ?? PLAN_TIERS[0];
-  const cycleData = planTier.billingCycles.find((c) => c.key === selectedPlan.billingCycle) ?? planTier.billingCycles[0];
-
-  const facultyPct = Math.min(100, Math.round((facultyCount / planTier.maxFaculty) * 100));
-  const pdfPct = Math.min(100, Math.round((pdfCount / planTier.maxPdfs) * 100));
-
-  const PlanIcon = planTier.name === 'diamond' ? Gem : planTier.name === 'premium' ? Crown : Zap;
-
-  const tierColors: Record<string, string> = {
-    basic: 'text-primary bg-primary/10',
-    premium: 'text-accent bg-accent/10',
-    diamond: 'text-sky-600 bg-sky-500/10',
-  };
-
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-base flex items-center gap-2 text-foreground">
-          <Crown className="h-4 w-4 text-primary" />
-          Subscription Overview
-        </h3>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Plan Info Card */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Active Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tierColors[planTier.name]}`}>
-                <PlanIcon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-foreground">{planTier.label}</p>
-                <p className="text-xs text-muted-foreground capitalize">{selectedPlan.billingCycle} billing</p>
-              </div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-2xl font-bold text-foreground">{formatPrice(cycleData.priceInr)}</p>
-              <p className="text-xs text-muted-foreground">per {selectedPlan.billingCycle} period</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Usage Card */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5" />
-                  Faculty
-                </span>
-                <span className="font-semibold text-foreground">
-                  {facultyCount} / {planTier.maxFaculty}
-                </span>
-              </div>
-              <Progress value={facultyPct} className="h-2" />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5" />
-                  PDFs
-                </span>
-                <span className="font-semibold text-foreground">
-                  {pdfCount} / {planTier.maxPdfs}
-                </span>
-              </div>
-              <Progress value={pdfPct} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Features */}
-      <Card className="border-border/60 mt-4">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Plan Features
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {planTier.features.map((feature) => (
-              <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
-                <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ─── Devices Tab ──────────────────────────────────────────────────────────────
-
-interface DeviceRecord {
-  fingerprint: string;
-  timestamp: bigint;
-}
-
-function DevicesTab() {
-  const { data: devicesRaw = [], isLoading, refetch, isFetching } = useGetDevices();
-  const devices = devicesRaw as DeviceRecord[];
-  const licenseId = getLicenseId();
-
-  return (
-    <div>
-      <SectionHeader title="Registered Devices" icon={Monitor} onRefresh={refetch} isFetching={isFetching} />
-      {isLoading ? (
-        <SectionSkeleton rows={4} />
-      ) : devices.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-          <Monitor className="h-10 w-10 opacity-30" />
-          <p className="text-sm font-medium">No devices registered</p>
-          <p className="text-xs">License ID: <code className="font-mono bg-muted px-1.5 py-0.5 rounded">{licenseId}</code></p>
+          <BookOpen className="h-10 w-10 opacity-30" />
+          <p className="text-sm font-medium">No PDFs uploaded yet</p>
         </div>
       ) : (
         <div className="rounded-lg border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead>#</TableHead>
-                <TableHead>Fingerprint</TableHead>
-                <TableHead>Registered On</TableHead>
+                <TableHead className="w-10">#</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Upload Date</TableHead>
+                <TableHead className="text-center">Faculty Count</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {devices.map((device, idx) => (
-                <TableRow key={device.fingerprint} className="hover:bg-muted/20">
+              {pdfs.map((pdf: PDF, idx: number) => (
+                <TableRow key={pdf.id} className="hover:bg-muted/20">
                   <TableCell className="text-muted-foreground text-sm font-mono">{idx + 1}</TableCell>
-                  <TableCell>
-                    <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
-                      {device.fingerprint.slice(0, 24)}…
-                    </code>
+                  <TableCell className="font-medium text-foreground">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-accent" />
+                      {pdf.title}
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {formatDateTime(device.timestamp)}
+                    {formatDate(pdf.uploadDate)}
+                  </TableCell>
+                  <TableCell className="text-center text-sm">{pdf.facultyIds.length}</TableCell>
+                  <TableCell>
+                    {pdf.taught ? (
+                      <Badge className="bg-success/15 text-success border-success/30 gap-1 text-xs">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Taught
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                      </Badge>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -577,189 +289,175 @@ function DevicesTab() {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Devices Tab ──────────────────────────────────────────────────────────────
+
+function DevicesTab() {
+  const { data: devices = [], isLoading, isError, refetch, isFetching } = useGetDevices();
+
+  return (
+    <div>
+      <SectionHeader title="Registered Devices" icon={Monitor} onRefresh={refetch} isFetching={isFetching} />
+      {isLoading ? (
+        <SectionSkeleton rows={3} />
+      ) : isError ? (
+        <SectionError onRetry={refetch} />
+      ) : devices.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+          <Monitor className="h-10 w-10 opacity-30" />
+          <p className="text-sm font-medium">No devices registered</p>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead>#</TableHead>
+                <TableHead>Device Fingerprint</TableHead>
+                <TableHead>Registered At</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {devices.map((device: DeviceRecord, idx: number) => (
+                <TableRow key={device.fingerprint} className="hover:bg-muted/20">
+                  <TableCell className="text-muted-foreground text-sm font-mono">{idx + 1}</TableCell>
+                  <TableCell className="font-mono text-xs">{device.fingerprint}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {formatDate(device.registeredAt)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Subscription Tab ─────────────────────────────────────────────────────────
+
+function SubscriptionTab() {
+  const selectedPlan = getSelectedPlan();
+  const planTier = PLAN_TIERS.find((p) => p.name === selectedPlan.planName) ?? PLAN_TIERS[0];
+  const { data: faculty = [] } = useAllFacultyWithPdfCount();
+  const { data: pdfs = [] } = useAllPDFs();
+
+  const activeFaculty = faculty.filter((f) => f.faculty.active).length;
+  const facultyPercent = Math.min((activeFaculty / planTier.maxFaculty) * 100, 100);
+  const pdfPercent = Math.min((pdfs.length / planTier.maxPdfs) * 100, 100);
+
+  const planIcons: Record<string, React.ElementType> = {
+    basic: Zap,
+    premium: Crown,
+    diamond: Gem,
+  };
+  const PlanIcon = planIcons[planTier.name] ?? Zap;
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/60">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <PlanIcon className="h-5 w-5 text-accent" />
+            Current Plan: {planTier.label}
+          </CardTitle>
+          <CardDescription>
+            Billing cycle: {selectedPlan.billingCycle} · License ID: {getLicenseId()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Faculty Usage</span>
+              <span className="font-medium">{activeFaculty} / {planTier.maxFaculty}</span>
+            </div>
+            <Progress value={facultyPercent} className="h-2" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">PDF Usage</span>
+              <span className="font-medium">{pdfs.length} / {planTier.maxPdfs}</span>
+            </div>
+            <Progress value={pdfPercent} className="h-2" />
+          </div>
+          <div className="pt-2">
+            <p className="text-sm font-medium text-foreground mb-2">Plan Features:</p>
+            <ul className="space-y-1">
+              {planTier.features.map((feature, i) => (
+                <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Main Developer Portal ────────────────────────────────────────────────────
 
 export default function DeveloperPortal() {
   const navigate = useNavigate();
-  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
-  const { data: facultyWithPdfCount = [] } = useAllFacultyWithPdfCount();
-  const { data: allPDFs = [], isLoading: pdfsLoading, isError: pdfsError, refetch: refetchPDFs, isFetching: pdfsFetching } = useAllPDFs();
+  const { data: faculty = [] } = useAllFacultyWithPdfCount();
+  const { data: pdfs = [] } = useAllPDFs();
+  const { data: devices = [] } = useGetDevices();
 
-  // Build faculty map for PDF tab
-  const facultyMap = new Map<string, string>();
-  facultyWithPdfCount.forEach((item: FacultyWithPdfCount) => {
-    facultyMap.set(item.faculty.id.toString(), item.faculty.name);
-  });
-
-  const totalFaculty = facultyWithPdfCount.length;
-  const totalPDFs = allPDFs.length;
-
-  if (adminLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm">Loading portal…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="max-w-sm w-full mx-4">
-          <CardContent className="pt-8 pb-6 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-              <Shield className="h-7 w-7 text-destructive" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">Access Denied</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                This portal is restricted to administrators only.
-              </p>
-            </div>
-            <Button onClick={() => navigate({ to: '/' })} className="w-full">
-              Return to Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const activeFaculty = faculty.filter((f) => f.faculty.active).length;
+  const taughtPdfs = pdfs.filter((p) => p.taught).length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8 animate-fade-in">
       {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground text-base leading-tight">Developer Portal</h1>
-              <p className="text-xs text-muted-foreground">Admin Overview</p>
-            </div>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Shield className="h-6 w-6 text-primary" />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate({ to: '/admin' })}
-            className="gap-2 text-xs"
-          >
-            ← Admin Panel
-          </Button>
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground">Developer Portal</h1>
+            <p className="text-muted-foreground mt-0.5">
+              System overview, analytics, and administration tools.
+            </p>
+          </div>
         </div>
-      </header>
+        <Button variant="outline" size="sm" onClick={() => navigate({ to: '/admin' })}>
+          Go to Admin Panel
+        </Button>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatsCard
-            icon={Users}
-            label="Total Faculty"
-            value={totalFaculty}
-            color="bg-primary/10 text-primary"
-          />
-          <StatsCard
-            icon={FileText}
-            label="Total PDFs"
-            value={totalPDFs}
-            color="bg-accent/10 text-accent"
-          />
-          <StatsCard
-            icon={CheckCircle2}
-            label="Taught PDFs"
-            value={allPDFs.filter((p) => p.taught).length}
-            color="bg-success/10 text-success"
-          />
-          <StatsCard
-            icon={AlertTriangle}
-            label="Pending PDFs"
-            value={allPDFs.filter((p) => !p.taught).length}
-            color="bg-warning/10 text-warning"
-          />
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard icon={Users} label="Active Faculty" value={activeFaculty} color="bg-primary/10 text-primary" />
+        <StatsCard icon={FileText} label="Total PDFs" value={pdfs.length} color="bg-accent/10 text-accent" />
+        <StatsCard icon={CheckCircle2} label="PDFs Taught" value={taughtPdfs} color="bg-success/10 text-success" />
+        <StatsCard icon={Monitor} label="Devices" value={devices.length} color="bg-secondary text-secondary-foreground" />
+      </div>
 
-        {/* Tabs */}
-        <Card className="border-border/60">
-          <CardContent className="pt-5">
-            <Tabs defaultValue="faculty">
-              <TabsList className="mb-5 flex-wrap h-auto gap-1">
-                <TabsTrigger value="faculty" className="gap-1.5 text-xs">
-                  <Users className="h-3.5 w-3.5" />
-                  Faculty
-                </TabsTrigger>
-                <TabsTrigger value="pdfs" className="gap-1.5 text-xs">
-                  <FileText className="h-3.5 w-3.5" />
-                  PDFs
-                </TabsTrigger>
-                <TabsTrigger value="annotations" className="gap-1.5 text-xs">
-                  <PenLine className="h-3.5 w-3.5" />
-                  Annotations
-                </TabsTrigger>
-                <TabsTrigger value="subscription" className="gap-1.5 text-xs">
-                  <Crown className="h-3.5 w-3.5" />
-                  Subscription
-                </TabsTrigger>
-                <TabsTrigger value="devices" className="gap-1.5 text-xs">
-                  <Monitor className="h-3.5 w-3.5" />
-                  Devices
-                </TabsTrigger>
-              </TabsList>
+      {/* Tabs */}
+      <Tabs defaultValue="faculty">
+        <TabsList className="grid grid-cols-4 w-full max-w-lg">
+          <TabsTrigger value="faculty">Faculty</TabsTrigger>
+          <TabsTrigger value="pdfs">PDFs</TabsTrigger>
+          <TabsTrigger value="devices">Devices</TabsTrigger>
+          <TabsTrigger value="subscription">Plan</TabsTrigger>
+        </TabsList>
 
-              <TabsContent value="faculty">
-                <FacultyTab />
-              </TabsContent>
-
-              <TabsContent value="pdfs">
-                <PDFsTab
-                  allPDFs={allPDFs}
-                  isLoading={pdfsLoading}
-                  isError={pdfsError}
-                  refetch={refetchPDFs}
-                  isFetching={pdfsFetching}
-                  facultyMap={facultyMap}
-                />
-              </TabsContent>
-
-              <TabsContent value="annotations">
-                <AnnotationsTab allPDFs={allPDFs} pdfsLoading={pdfsLoading} />
-              </TabsContent>
-
-              <TabsContent value="subscription">
-                <SubscriptionTab
-                  facultyCount={totalFaculty}
-                  pdfCount={totalPDFs}
-                />
-              </TabsContent>
-
-              <TabsContent value="devices">
-                <DevicesTab />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border mt-8 py-4 text-center text-xs text-muted-foreground">
-        <p>
-          Built with{' '}
-          <span className="text-destructive">♥</span>{' '}
-          using{' '}
-          <a
-            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || 'unknown-app')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline font-medium"
-          >
-            caffeine.ai
-          </a>
-          {' '}· © {new Date().getFullYear()} EduBoard
-        </p>
-      </footer>
+        <TabsContent value="faculty" className="mt-6">
+          <FacultyTab />
+        </TabsContent>
+        <TabsContent value="pdfs" className="mt-6">
+          <PDFsTab />
+        </TabsContent>
+        <TabsContent value="devices" className="mt-6">
+          <DevicesTab />
+        </TabsContent>
+        <TabsContent value="subscription" className="mt-6">
+          <SubscriptionTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

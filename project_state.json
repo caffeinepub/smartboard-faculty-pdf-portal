@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 37,
+  "projectStateVersion": 45,
   "summary": "A smart board app for college use where admins upload PDFs in the backend, assign them to specific faculty, faculty can view and annotate PDFs during teaching sessions with auto-save, and the backend shows whether each PDF has been taught or not. The app should be downloadable/installable, and each license should be limited to 10 devices — additional devices attempting to log in beyond the 10-device limit should be restricted.",
   "architectural_notes": [
     "Role-based access: Admin (backend) and Faculty (portal/smart board)",
@@ -13,9 +13,10 @@
     "Draft Version 7 shows a completely blank page on load (likely a rendering or routing error)",
     "Unable to create faculty from the Admin Panel (Faculty Management section)",
     "Faculty limit incorrectly shows as reached even when no faculty members have been created (false positive limit enforcement)",
-    "Admin login credentials are missing or not provided to the user — admin access is currently inaccessible"
+    "After successfully logging into the Admin Panel, users are still prompted for admin access again when attempting to perform actions inside the panel (double-authentication issue)",
+    "Unable to assign PDF to a faculty member in the Admin Panel"
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-build-an-admin-panel-frontend-page-where-administrators-can-upload-pdf-files-and-assign-them-to-specific-faculty-members-view-all-uploaded-pdfs-in-a-table-showing-title-assigned-faculty-upload-date-and-taught-untaught-status",
@@ -230,6 +231,54 @@
       "title": "Add a 'Change Admin Credentials' section inside the Admin Panel (visible only after successful login). This section must contain a form with three fields: 'New Username', 'New Password', and 'Confirm Password'. On submission, validate that the new username is non-empty, the password is at least 6 characters, and the two password fields match. If valid, call the backend `setAdminCredentials` function to update the stored credentials and display a success message. If validation fails, display appropriate inline error messages. Clear the form fields after a successful update.",
       "reqIds": [
         "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-the-admin-panel-so-that-once-a-user-has-successfully-authenticated-via-the-adminpasscodegate-username-password-login-they-are-not-prompted-for-admin-credentials-again-for-any-action-performed-inside-the-admin-panel-during-the-same-session-specifically-1-identify-every-location-in-adminpanel-tsx-its-child-components-facultymanagementtable-pdfuploadform-subscriptionsection-devicemanagementsection-changeadmincredentialsform-pdflisttable-and-their-associated-mutation-query-hooks-in-usequeries-ts-where-a-secondary-admin-credential-check-re-authentication-call-or-additional-passcode-gate-is-triggered-2-remove-or-bypass-any-such-secondary-authentication-check-so-that-the-sessionstorage-flag-set-by-adminpasscodegate-is-the-single-source-of-truth-for-admin-authentication-within-the-session-3-ensure-all-backend-calls-made-from-within-the-admin-panel-e-g-uploadpdf-createfaculty-deletefaculty-updateplan-removedevice-setadmincredentials-do-not-independently-re-verify-admin-credentials-on-the-frontend-before-executing-they-should-proceed-directly-using-the-already-authenticated-actor-4-the-adminpasscodegate-itself-must-remain-intact-so-that-navigating-fresh-to-the-admin-panel-route-still-requires-login-and-the-lock-sign-out-button-still-clears-the-session",
+      "title": "Audit and fix the Admin Panel so that once a user has successfully authenticated via the AdminPasscodeGate (username + password login), they are not prompted for admin credentials again for any action performed inside the Admin Panel during the same session. Specifically: (1) identify every location in AdminPanel.tsx, its child components (FacultyManagementTable, PDFUploadForm, SubscriptionSection, DeviceManagementSection, ChangeAdminCredentialsForm, PDFListTable), and their associated mutation/query hooks in useQueries.ts where a secondary admin credential check, re-authentication call, or additional passcode gate is triggered; (2) remove or bypass any such secondary authentication check so that the sessionStorage flag set by AdminPasscodeGate is the single source of truth for admin authentication within the session; (3) ensure all backend calls made from within the Admin Panel (e.g., uploadPDF, createFaculty, deleteFaculty, updatePlan, removeDevice, setAdminCredentials) do not independently re-verify admin credentials on the frontend before executing — they should proceed directly using the already-authenticated actor; (4) the AdminPasscodeGate itself must remain intact so that navigating fresh to the Admin Panel route still requires login, and the 'Lock / Sign Out' button still clears the session.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-createfacultymodal-component-so-that-it-never-displays-the-admin-access-is-required-to-create-faculty-members-please-ensure-you-are-logged-in-as-an-admin-error-when-the-user-is-already-authenticated-inside-the-admin-panel-via-adminpasscodegate-the-modal-must-not-perform-any-pre-flight-admin-authorization-check-on-the-frontend-side-before-calling-the-backend-remove-or-bypass-any-frontend-logic-inside-createfacultymodal-or-in-the-useaddfaculty-mutation-hook-in-usequeries-ts-that-inspects-admin-authentication-state-calls-a-separate-admin-check-function-or-short-circuits-the-submission-with-an-authorization-error-before-the-backend-is-even-contacted",
+      "title": "Fix the CreateFacultyModal component so that it never displays the 'Admin access is required to create faculty members. Please ensure you are logged in as an admin.' error when the user is already authenticated inside the Admin Panel via AdminPasscodeGate. The modal must not perform any pre-flight admin authorization check on the frontend side before calling the backend. Remove or bypass any frontend logic inside CreateFacultyModal (or in the useAddFaculty mutation hook in useQueries.ts) that inspects admin authentication state, calls a separate admin-check function, or short-circuits the submission with an authorization error before the backend is even contacted.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-the-backend-createfaculty-function-in-backend-main-mo-to-ensure-it-does-not-independently-re-verify-admin-credentials-or-return-an-authorization-error-when-called-from-within-an-already-authenticated-admin-panel-session-the-function-must-accept-a-valid-faculty-name-and-proceed-to-the-faculty-count-vs-plan-limit-check-without-requiring-a-secondary-credential-token-from-the-frontend-if-the-function-currently-expects-an-admin-token-parameter-that-the-frontend-is-not-supplying-or-is-supplying-incorrectly-fix-the-function-signature-and-the-corresponding-frontend-call-in-usequeries-ts-to-align-the-single-source-of-truth-for-admin-authentication-is-the-sessionstorage-flag-set-by-adminpasscodegate-not-a-per-call-credential-re-check",
+      "title": "Audit the backend createFaculty function in backend/main.mo to ensure it does not independently re-verify admin credentials or return an authorization error when called from within an already-authenticated Admin Panel session. The function must accept a valid faculty name and proceed to the faculty count vs. plan limit check without requiring a secondary credential token from the frontend. If the function currently expects an admin token parameter that the frontend is not supplying (or is supplying incorrectly), fix the function signature and the corresponding frontend call in useQueries.ts to align — the single source of truth for admin authentication is the sessionStorage flag set by AdminPasscodeGate, not a per-call credential re-check.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-useaddfaculty-mutation-hook-in-frontend-src-hooks-usequeries-ts-and-the-createfacultymodal-component-in-frontend-src-components-createfacultymodal-tsx-to-ensure-the-backend-createfaculty-call-is-made-without-any-admin-token-principal-or-credential-parameter-remove-any-argument-that-was-being-passed-as-an-admin-credential-or-token-to-the-backend-call-ensure-the-mutation-calls-actor-createfaculty-name-with-only-the-faculty-name-as-the-argument-matching-the-updated-backend-function-signature",
+      "title": "Update the `useAddFaculty` mutation hook in `frontend/src/hooks/useQueries.ts` and the `CreateFacultyModal` component in `frontend/src/components/CreateFacultyModal.tsx` to ensure the backend `createFaculty` call is made without any admin token, principal, or credential parameter. Remove any argument that was being passed as an admin credential or token to the backend call. Ensure the mutation calls `actor.createFaculty(name)` with only the faculty name as the argument, matching the updated backend function signature.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-diagnose-and-fix-the-pdf-upload-assignment-flow-in-the-admin-panel-so-that-admins-can-successfully-assign-a-pdf-to-one-or-more-faculty-members-audit-the-pdfuploadform-component-frontend-src-components-pdfuploadform-tsx-and-the-useuploadpdf-mutation-hook-in-frontend-src-hooks-usequeries-ts-to-identify-why-the-assignment-fails-1-verify-the-faculty-selector-inside-the-form-correctly-populates-the-list-of-active-faculty-members-from-the-backend-2-ensure-the-selected-faculty-ids-are-collected-and-passed-correctly-to-the-backend-uploadpdf-call-3-ensure-no-pre-flight-admin-credential-re-check-short-circuits-the-submission-before-the-backend-is-contacted-4-ensure-the-backend-uploadpdf-function-in-backend-main-mo-accepts-the-faculty-assignment-parameter-and-persists-the-assignment-without-requiring-a-secondary-authorization-token-the-sessionstorage-flag-set-by-adminpasscodegate-is-the-sole-auth-signal-5-after-a-successful-upload-invalidate-and-refetch-the-pdf-list-query-so-the-table-reflects-the-newly-assigned-pdf-immediately",
+      "title": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members. Audit the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) and the `useUploadPDF` mutation hook in `frontend/src/hooks/useQueries.ts` to identify why the assignment fails: (1) verify the faculty selector inside the form correctly populates the list of active faculty members from the backend; (2) ensure the selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call; (3) ensure no pre-flight admin credential re-check short-circuits the submission before the backend is contacted; (4) ensure the backend `uploadPDF` function in `backend/main.mo` accepts the faculty assignment parameter and persists the assignment without requiring a secondary authorization token — the sessionStorage flag set by AdminPasscodeGate is the sole auth signal; (5) after a successful upload, invalidate and refetch the PDF list query so the table reflects the newly assigned PDF immediately.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-pdfuploadform-component-frontend-src-components-pdfuploadform-tsx-so-that-1-the-faculty-multi-select-field-fetches-and-renders-the-current-list-of-active-faculty-members-from-the-backend-on-mount-2-the-user-can-select-one-or-more-faculty-members-before-submitting-3-the-useuploadpdf-mutation-in-frontend-src-hooks-usequeries-ts-calls-actor-uploadpdf-title-base64content-selectedfacultyids-without-any-additional-admin-credential-argument-4-on-success-the-pdf-list-query-is-invalidated-and-refetched-5-on-failure-the-specific-error-returned-by-the-backend-e-g-pdf-limit-exceeded-is-shown-inline-in-the-form",
+      "title": "Update the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) so that: (1) the faculty multi-select field fetches and renders the current list of active faculty members from the backend on mount; (2) the user can select one or more faculty members before submitting; (3) the `useUploadPDF` mutation in `frontend/src/hooks/useQueries.ts` calls `actor.uploadPDF(title, base64Content, selectedFacultyIds)` without any additional admin credential argument; (4) on success, the PDF list query is invalidated and refetched; (5) on failure, the specific error returned by the backend (e.g., PDF limit exceeded) is shown inline in the form.",
+      "reqIds": [
+        "REQ-53"
       ],
       "version": 1
     }
@@ -454,6 +503,28 @@
       "summary": "Add a backend data model and functions for admin credentials. Store a single admin record containing a username and a hashed (or securely compared) password in stable state. Provide a backend function `setAdminCredentials(username: Text, password: Text) : async Result` to create or update admin credentials, and a function `verifyAdminCredentials(username: Text, password: Text) : async Bool` that returns true when the supplied username and password match the stored credentials. Initialize stable state with a default admin username of 'admin' and password 'admin1234' so the system is accessible on first deploy.",
       "reqIds": [
         "REQ-43"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Fix the Admin Panel so that once the user has successfully logged in via the admin credentials gate, they are not prompted again for admin access when performing actions inside the Admin Panel. The authenticated session should persist for all actions within the panel.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Fix the backend `createFaculty` function in `backend/main.mo` so that it does not enforce any caller-identity or admin-only access control check. The function must be callable from the frontend without passing any admin token or principal verification. Remove or disable any `assert` statement, `isAdmin` check, or caller-principal guard that causes it to return an 'admin-only' or authorization error. The function should accept a faculty name text argument and proceed directly to the faculty count vs. plan limit check, then insert the new faculty record if the limit is not exceeded.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "Audit the backend `uploadPDF` function in `backend/main.mo` to ensure it does not enforce any caller-identity or admin-only access control check that would reject the call when invoked from the already-authenticated Admin Panel session. The function must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant. Remove or disable any `assert`, `isAdmin` check, or caller-principal guard that causes it to return an authorization error.",
+      "reqIds": [
+        "REQ-52"
       ],
       "status": "pending"
     }

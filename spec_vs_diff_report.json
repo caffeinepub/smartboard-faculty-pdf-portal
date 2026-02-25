@@ -1,23 +1,50 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T17:46:37.381Z",
-  "summary": "The diff implements all three requirements (REQ-43, REQ-44, REQ-45) with good coverage. Backend adds adminCredentials stable state with default credentials and both verifyAdminCredentials/setAdminCredentials functions. Frontend replaces the passcode gate with a username+password form, adds sessionStorage persistence, shows credentials on HomePage, and adds a ChangeAdminCredentialsForm. All major acceptance criteria appear to be satisfied based on the diff evidence.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-25T18:47:03.853Z",
+  "summary": "The diff addresses the PDF-to-faculty assignment fix across frontend and backend. The frontend PDFUploadForm, useQueries hooks, and AdminPanel have been updated. However, the backend main.mo does not implement uploadPDF, getPDFsByFaculty, or getAllPDFs functions — all PDF/faculty data remains localStorage-based. The backend changes are essentially unrelated to the requirements (migration scaffolding and annotation/user-profile functions only). REQ-52 backend requirements are not met.",
+  "missing_requirements": [
     {
-      "description": "A backend/migration.mo module was added to handle migration of existing stable state to include the new adminCredentials field.",
-      "reason": "The build request did not request a migration module or any migration strategy. It only required stable state initialization with default credentials on first deploy.",
+      "id": "REQ-52",
+      "requirement": "The backend uploadPDF function in backend/main.mo must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant, with no caller-principal assertion or isAdmin guard.",
+      "reason": "The modified backend/main.mo contains no uploadPDF function at all. It only defines annotation and user-profile functions. There is no backend implementation of PDF storage, faculty assignment persistence, getPDFsByFaculty, or getAllPDFs in the diff.",
       "evidence": [
-        "backend/migration.mo"
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Password visibility toggle (show/hide password) buttons are added to both the login form and the ChangeAdminCredentialsForm.",
-      "reason": "The build request did not mention any show/hide password toggle UI feature; it only required the fields to exist.",
+      "id": "REQ-52",
+      "requirement": "The stored PDF record includes the assigned faculty IDs and is retrievable via getPDFsByFaculty and getAllPDFs functions.",
+      "reason": "Neither getPDFsByFaculty nor getAllPDFs appear in the backend/main.mo diff. PDF data remains in localStorage on the frontend only.",
       "evidence": [
-        "frontend/src/components/AdminPasscodeGate.tsx",
-        "frontend/src/components/ChangeAdminCredentialsForm.tsx"
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-51",
+      "requirement": "The backend uploadPDF function persists the faculty assignment without requiring any additional credential token from the frontend.",
+      "reason": "No backend uploadPDF function exists in the diff; the frontend mutation calls into localStorage helpers, not a canister actor call, so true backend persistence is absent.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-53",
+      "requirement": "The useUploadPDF mutation in frontend/src/hooks/useQueries.ts calls actor.uploadPDF(title, base64Content, selectedFacultyIds) without any additional admin credential argument.",
+      "reason": "The useQueries.ts diff shows localStorage-based PDF storage rather than calling actor.uploadPDF. The mutation does not call any backend canister actor method for PDF upload.",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "A migration module (backend/migration.mo) was added with OldActor/NewActor types and a run function for data migration.",
+      "reason": "No migration module was requested in any of REQ-51, REQ-52, or REQ-53. This is extra infrastructure not requested by the build spec.",
+      "evidence": [
+        "backend/migration.mo"
       ]
     }
   ],
@@ -27,10 +54,19 @@
     "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/AdminPasscodeGate.tsx",
+    "frontend/src/components/AnnotationCanvas.tsx",
     "frontend/src/components/ChangeAdminCredentialsForm.tsx",
+    "frontend/src/components/FacultyManagementTable.tsx",
+    "frontend/src/components/FacultyPDFList.tsx",
+    "frontend/src/components/FacultySelector.tsx",
+    "frontend/src/components/PDFListTable.tsx",
+    "frontend/src/components/PDFUploadForm.tsx",
+    "frontend/src/context/FacultyContext.tsx",
     "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/AdminPanel.tsx",
-    "frontend/src/pages/HomePage.tsx",
+    "frontend/src/pages/DeveloperPortal.tsx",
+    "frontend/src/pages/FacultyPortal.tsx",
+    "frontend/src/pages/TeachingView.tsx",
     "project_state.json"
   ]
 }

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { usePDFsByFaculty } from '@/hooks/useQueries';
 
 interface FacultyPDFListProps {
-  facultyId: bigint;
+  facultyId: number;
   facultyName: string;
 }
 
@@ -44,12 +44,12 @@ export default function FacultyPDFList({ facultyId, facultyName }: FacultyPDFLis
   return (
     <div className="space-y-3">
       <p className="text-muted-foreground text-sm font-medium">
-        {pdfs.length} PDF{pdfs.length !== 1 ? 's' : ''} assigned to you
+        {pdfs.length} PDF{pdfs.length !== 1 ? 's' : ''} assigned to {facultyName}
       </p>
       {pdfs.map((pdf) => (
         <Card
-          key={pdf.id.toString()}
-          className="cursor-pointer hover:shadow-elevated transition-all duration-200 hover:border-primary/30 group"
+          key={pdf.id}
+          className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/40 group"
           onClick={() =>
             navigate({
               to: '/teach/$pdfId/$facultyId',
@@ -60,29 +60,31 @@ export default function FacultyPDFList({ facultyId, facultyName }: FacultyPDFLis
             })
           }
         >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <FileText className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg text-foreground truncate group-hover:text-primary transition-colors">
-                {pdf.title}
-              </h3>
-              <div className="flex items-center gap-2 mt-1">
-                {pdf.taught ? (
-                  <span className="taught-badge text-xs">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Taught
-                  </span>
-                ) : (
-                  <span className="untaught-badge text-xs">
-                    <Clock className="h-3.5 w-3.5" />
-                    Not Taught
-                  </span>
-                )}
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground truncate">{pdf.title}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {pdf.taught ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                        <span className="text-xs text-success font-medium">Taught</span>
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Not yet taught</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
           </CardContent>
         </Card>
       ))}

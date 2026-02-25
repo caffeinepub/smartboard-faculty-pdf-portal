@@ -8,19 +8,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import type { PDF } from '../backend';
-import type { FacultyRecord } from '@/hooks/useQueries';
+import type { PDF, Faculty } from '../hooks/useQueries';
 
 interface PDFListTableProps {
   pdfs: PDF[];
-  facultyList: FacultyRecord[];
+  facultyList: Faculty[];
 }
 
-function formatDate(timestamp: bigint): string {
-  const ms = Number(timestamp);
-  if (ms === 0) return 'Just uploaded';
-  return new Date(ms).toLocaleDateString('en-US', {
+function formatDate(timestamp: number): string {
+  if (!timestamp) return 'Just uploaded';
+  return new Date(timestamp).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -30,7 +27,7 @@ function formatDate(timestamp: bigint): string {
 }
 
 export default function PDFListTable({ pdfs, facultyList }: PDFListTableProps) {
-  const getFacultyNames = (facultyIds: bigint[]): string => {
+  const getFacultyNames = (facultyIds: number[]): string => {
     if (facultyIds.length === 0) return 'Unassigned';
     return facultyIds
       .map((id) => facultyList.find((f) => f.id === id)?.name ?? `Faculty #${id}`)
@@ -70,7 +67,7 @@ export default function PDFListTable({ pdfs, facultyList }: PDFListTableProps) {
         </TableHeader>
         <TableBody>
           {pdfs.map((pdf) => (
-            <TableRow key={pdf.id.toString()} className="hover:bg-secondary/20 transition-colors">
+            <TableRow key={pdf.id} className="hover:bg-secondary/20 transition-colors">
               <TableCell className="font-semibold text-base py-4">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-accent flex-shrink-0" />

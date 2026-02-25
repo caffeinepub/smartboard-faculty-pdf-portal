@@ -1,53 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin User ID & Password Authentication System - Frontend",
+  "title": "Fix PDF-to-faculty assignment in Admin Panel",
   "requirements": [
     {
-      "id": "REQ-44",
-      "summary": "Replace hardcoded passcode with username/password login form that verifies credentials via backend",
+      "id": "REQ-51",
+      "summary": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members",
       "acceptanceCriteria": [
-        "The Admin Panel route shows a username + password login form before granting access.",
-        "Submitting correct credentials (verified by backend) grants access and persists the session in sessionStorage.",
-        "Submitting incorrect credentials shows 'Invalid username or password.' inline without granting access.",
-        "The 'Lock / Sign Out' button clears the sessionStorage session and returns to the login form.",
-        "The Home Page displays the default admin credentials (username: admin, password: admin1234) in a clearly visible location.",
-        "On page refresh within the same session, the user is not re-prompted for credentials."
+        "The PDF upload form in the Admin Panel displays a populated list of active faculty members to assign to.",
+        "Selecting one or more faculty members and submitting the form successfully calls the backend uploadPDF function with the selected faculty IDs.",
+        "No admin credential prompt or authorization error appears when the user is already authenticated via AdminPasscodeGate.",
+        "The backend uploadPDF function persists the faculty assignment without requiring any additional credential token from the frontend.",
+        "After a successful upload, the PDF list table refreshes and shows the new PDF with the correct assigned faculty names.",
+        "If the PDF upload or faculty assignment fails, a descriptive error message is shown inline in the form."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AdminPasscodeGate.tsx",
+          "path": "frontend/src/components/PDFUploadForm.tsx",
           "operation": "modify",
-          "description": "Replace the single passcode input with a two-field login form containing 'Username' text input and 'Password' password input. On form submission, call the backend verifyAdminCredentials function with the entered username and password. If the backend returns true, persist the authenticated state in sessionStorage using the existing session key and render children. If false, display an inline error message 'Invalid username or password.' below the form. Retain the existing LOCK_EVENT listener and sessionStorage session management logic. Ensure the component continues to check sessionStorage on mount to preserve sessions across page refreshes."
+          "description": "Update the PDFUploadForm component to fetch and display active faculty members in a multi-select field on mount. Ensure the faculty selector correctly populates from the backend query. Add validation to require at least one faculty member to be selected before submission. Update the form submission handler to collect selected faculty IDs and pass them to the useUploadPDF mutation without any additional admin credential argument. Display backend error messages (e.g., PDF limit exceeded) inline within the form. Remove any pre-flight admin credential re-check that might short-circuit the submission before contacting the backend."
         },
         {
-          "path": "frontend/src/pages/HomePage.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a visible notice displaying the default admin credentials near the admin access section. The notice should clearly state: 'Default admin login - Username: admin, Password: admin1234'. Style the notice to be easily readable and positioned near the Admin Panel navigation button so users know how to access the admin interface on first use."
+          "description": "Update the useUploadPDF mutation hook to accept title, base64Content, and selectedFacultyIds parameters. Ensure the mutation calls actor.uploadPDF(title, base64Content, selectedFacultyIds) without passing any additional admin token or credential argument. On successful upload, invalidate the PDF list query (['pdfs']) to trigger an immediate refetch so the table displays the newly assigned PDF. Ensure error responses from the backend are properly returned to the form for inline display."
         }
       ]
     },
     {
-      "id": "REQ-45",
-      "summary": "Add Change Admin Credentials section in Admin Panel with form to update username and password via backend",
+      "id": "REQ-53",
+      "summary": "Update the PDFUploadForm component so that the faculty multi-select field fetches and renders active faculty members, allows selecting one or more faculty members, and calls the backend without any additional admin credential",
       "acceptanceCriteria": [
-        "A 'Change Admin Credentials' form is present and visible within the Admin Panel after login.",
-        "The form contains New Username, New Password, and Confirm Password fields.",
-        "Submitting with a non-empty username, password of at least 6 characters, and matching password fields calls setAdminCredentials on the backend.",
-        "A success message is displayed after credentials are updated successfully.",
-        "Inline validation errors are shown for empty username, password too short, or mismatched passwords.",
-        "Form fields are cleared after a successful update."
+        "The faculty selector in PDFUploadForm shows all active faculty members fetched from the backend.",
+        "At least one faculty member must be selected before the form allows submission.",
+        "The mutation calls actor.uploadPDF with title, base64 content, and the array of selected faculty IDs — no admin token argument.",
+        "On successful submission, the PDF list table is automatically refreshed.",
+        "Error messages from the backend (e.g., PDF limit reached) are displayed inline without crashing the form."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/ChangeAdminCredentialsForm.tsx",
-          "operation": "create",
-          "description": "Create a new form component for changing admin credentials. The form must include three controlled input fields: 'New Username' (text input), 'New Password' (password input), and 'Confirm Password' (password input). Implement client-side validation: ensure new username is non-empty, new password is at least 6 characters, and both password fields match. Display inline error messages for validation failures. On successful validation, call the backend setAdminCredentials function with the new username and password. If the backend call succeeds, display a success message and clear all form fields. If the backend call fails, display the error message inline. Use React state to manage form values, validation errors, loading state, and success/error messages."
+          "path": "frontend/src/components/PDFUploadForm.tsx",
+          "operation": "modify",
+          "description": "Refactor the PDFUploadForm component to include a faculty multi-select field that fetches the list of active faculty members from the backend on component mount using the useFaculty query. Render each active faculty member as a selectable option with their name displayed. Implement form state to track the array of selected faculty IDs. Add validation logic to ensure at least one faculty member is selected before enabling form submission. Update the form submit handler to pass the title, base64 PDF content, and selectedFacultyIds array to the useUploadPDF mutation. Display any error returned by the mutation inline within the form (e.g., using an error message element below the submit button). Ensure no admin credential re-check occurs within the form before calling the mutation."
         },
         {
-          "path": "frontend/src/pages/AdminPanel.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Import and render the ChangeAdminCredentialsForm component within the Admin Panel page. Position the component in a dedicated section below the existing subscription and management sections. Add a heading 'Change Admin Credentials' above the form. Ensure the form is only visible after the user has successfully authenticated through the AdminPasscodeGate. The form should be styled consistently with the rest of the admin interface using the existing card/section design patterns."
+          "description": "Modify the useUploadPDF mutation to accept three parameters: title (string), base64Content (string), and selectedFacultyIds (array of bigint or number). Update the mutationFn to call actor.uploadPDF(title, base64Content, selectedFacultyIds) without passing any admin token or additional credential argument. Configure the mutation's onSuccess callback to invalidate the ['pdfs'] query key using queryClient.invalidateQueries so the PDF list table automatically refetches and displays the newly uploaded PDF with its assigned faculty. Ensure the mutation properly handles and returns backend error responses (such as PDF limit exceeded) so they can be displayed inline in the form."
         }
       ]
     }

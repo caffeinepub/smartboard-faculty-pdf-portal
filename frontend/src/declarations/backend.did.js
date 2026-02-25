@@ -8,26 +8,8 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const UserRole = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
-});
-export const FacultyCreateResult = IDL.Variant({
-  'error' : IDL.Text,
-  'limitReached' : IDL.Nat,
-  'success' : IDL.Null,
-});
-export const Faculty = IDL.Record({
-  'id' : IDL.Nat,
-  'active' : IDL.Bool,
-  'name' : IDL.Text,
-});
-export const FacultyWithPdfCount = IDL.Record({
-  'faculty' : Faculty,
-  'pdfCount' : IDL.Nat,
-});
 export const Annotation = IDL.Record({
+  'id' : IDL.Nat,
   'fillColor' : IDL.Opt(IDL.Text),
   'imageData' : IDL.Opt(IDL.Text),
   'endX' : IDL.Opt(IDL.Float64),
@@ -39,81 +21,56 @@ export const Annotation = IDL.Record({
   'shapeType' : IDL.Opt(IDL.Text),
   'coordinates' : IDL.Text,
 });
+export const AnnotationCreateResult = IDL.Variant({
+  'error' : IDL.Text,
+  'success' : IDL.Null,
+});
+export const UserRole = IDL.Variant({
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
+export const AnnotationDeleteResult = IDL.Variant({
+  'error' : IDL.Text,
+  'success' : IDL.Null,
+});
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
-export const PDF = IDL.Record({
-  'id' : IDL.Nat,
-  'title' : IDL.Text,
-  'content' : IDL.Text,
-  'taught' : IDL.Bool,
-  'uploadDate' : IDL.Int,
-  'facultyIds' : IDL.Vec(IDL.Nat),
+export const SyncState = IDL.Record({
+  'unsyncedChanges' : IDL.Nat,
+  'lastSyncTimestamp' : IDL.Int,
+});
+export const SyncResult = IDL.Variant({
+  'error' : IDL.Text,
+  'success' : SyncState,
+});
+export const AnnotationUpdateResult = IDL.Variant({
+  'error' : IDL.Text,
+  'success' : IDL.Null,
 });
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addAnnotation' : IDL.Func([Annotation], [AnnotationCreateResult], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'createFaculty' : IDL.Func([IDL.Text], [FacultyCreateResult], []),
-  'getAllFacultyWithPdfCount' : IDL.Func(
-      [],
-      [IDL.Vec(FacultyWithPdfCount)],
-      ['query'],
-    ),
-  'getAnnotationsByPDF' : IDL.Func([IDL.Nat], [IDL.Vec(Annotation)], ['query']),
+  'deleteAnnotation' : IDL.Func([IDL.Nat], [AnnotationDeleteResult], []),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getFaculty' : IDL.Func([], [IDL.Vec(Faculty)], ['query']),
-  'getPDFsByFaculty' : IDL.Func([IDL.Nat], [IDL.Vec(PDF)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'markAsTaught' : IDL.Func([IDL.Nat], [], []),
-  'resetAdminCredentials' : IDL.Func([], [IDL.Bool], []),
-  'saveAnnotation' : IDL.Func(
-      [
-        IDL.Nat,
-        IDL.Nat,
-        IDL.Text,
-        IDL.Text,
-        IDL.Opt(IDL.Float64),
-        IDL.Opt(IDL.Float64),
-        IDL.Opt(IDL.Text),
-        IDL.Opt(IDL.Text),
-        IDL.Opt(IDL.Text),
-      ],
-      [IDL.Nat],
-      [],
-    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'setAdminCredentials' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-  'verifyAdminCredentials' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+  'syncAnnotations' : IDL.Func([], [SyncResult], []),
+  'updateAnnotation' : IDL.Func([Annotation], [AnnotationUpdateResult], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const UserRole = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
-  });
-  const FacultyCreateResult = IDL.Variant({
-    'error' : IDL.Text,
-    'limitReached' : IDL.Nat,
-    'success' : IDL.Null,
-  });
-  const Faculty = IDL.Record({
-    'id' : IDL.Nat,
-    'active' : IDL.Bool,
-    'name' : IDL.Text,
-  });
-  const FacultyWithPdfCount = IDL.Record({
-    'faculty' : Faculty,
-    'pdfCount' : IDL.Nat,
-  });
   const Annotation = IDL.Record({
+    'id' : IDL.Nat,
     'fillColor' : IDL.Opt(IDL.Text),
     'imageData' : IDL.Opt(IDL.Text),
     'endX' : IDL.Opt(IDL.Float64),
@@ -125,60 +82,46 @@ export const idlFactory = ({ IDL }) => {
     'shapeType' : IDL.Opt(IDL.Text),
     'coordinates' : IDL.Text,
   });
+  const AnnotationCreateResult = IDL.Variant({
+    'error' : IDL.Text,
+    'success' : IDL.Null,
+  });
+  const UserRole = IDL.Variant({
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
+  const AnnotationDeleteResult = IDL.Variant({
+    'error' : IDL.Text,
+    'success' : IDL.Null,
+  });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
-  const PDF = IDL.Record({
-    'id' : IDL.Nat,
-    'title' : IDL.Text,
-    'content' : IDL.Text,
-    'taught' : IDL.Bool,
-    'uploadDate' : IDL.Int,
-    'facultyIds' : IDL.Vec(IDL.Nat),
+  const SyncState = IDL.Record({
+    'unsyncedChanges' : IDL.Nat,
+    'lastSyncTimestamp' : IDL.Int,
+  });
+  const SyncResult = IDL.Variant({ 'error' : IDL.Text, 'success' : SyncState });
+  const AnnotationUpdateResult = IDL.Variant({
+    'error' : IDL.Text,
+    'success' : IDL.Null,
   });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addAnnotation' : IDL.Func([Annotation], [AnnotationCreateResult], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'createFaculty' : IDL.Func([IDL.Text], [FacultyCreateResult], []),
-    'getAllFacultyWithPdfCount' : IDL.Func(
-        [],
-        [IDL.Vec(FacultyWithPdfCount)],
-        ['query'],
-      ),
-    'getAnnotationsByPDF' : IDL.Func(
-        [IDL.Nat],
-        [IDL.Vec(Annotation)],
-        ['query'],
-      ),
+    'deleteAnnotation' : IDL.Func([IDL.Nat], [AnnotationDeleteResult], []),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getFaculty' : IDL.Func([], [IDL.Vec(Faculty)], ['query']),
-    'getPDFsByFaculty' : IDL.Func([IDL.Nat], [IDL.Vec(PDF)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'markAsTaught' : IDL.Func([IDL.Nat], [], []),
-    'resetAdminCredentials' : IDL.Func([], [IDL.Bool], []),
-    'saveAnnotation' : IDL.Func(
-        [
-          IDL.Nat,
-          IDL.Nat,
-          IDL.Text,
-          IDL.Text,
-          IDL.Opt(IDL.Float64),
-          IDL.Opt(IDL.Float64),
-          IDL.Opt(IDL.Text),
-          IDL.Opt(IDL.Text),
-          IDL.Opt(IDL.Text),
-        ],
-        [IDL.Nat],
-        [],
-      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'setAdminCredentials' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-    'verifyAdminCredentials' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'syncAnnotations' : IDL.Func([], [SyncResult], []),
+    'updateAnnotation' : IDL.Func([Annotation], [AnnotationUpdateResult], []),
   });
 };
 

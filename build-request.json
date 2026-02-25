@@ -1,84 +1,79 @@
 {
   "kind": "build_request",
-  "title": "Admin User ID & Password Authentication System",
-  "projectName": "SmartBoard Faculty Portal",
+  "title": "Fix PDF-to-faculty assignment in Admin Panel",
+  "projectName": "EduBoard",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-43",
-      "text": "Add a backend data model and functions for admin credentials. Store a single admin record containing a username and a hashed (or securely compared) password in stable state. Provide a backend function `setAdminCredentials(username: Text, password: Text) : async Result` to create or update admin credentials, and a function `verifyAdminCredentials(username: Text, password: Text) : async Bool` that returns true when the supplied username and password match the stored credentials. Initialize stable state with a default admin username of 'admin' and password 'admin1234' so the system is accessible on first deploy.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "need to create admin user id  & password"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend stable state contains an admin credentials record with username and password fields.",
-        "Default credentials are initialized to username='admin' and password='admin1234' on first deploy.",
-        "verifyAdminCredentials returns true when the correct username and password are supplied.",
-        "verifyAdminCredentials returns false when either the username or password is incorrect.",
-        "setAdminCredentials updates the stored username and password and returns a success result.",
-        "Both functions are exposed as callable actor methods."
-      ]
-    },
-    {
-      "id": "REQ-44",
-      "text": "Replace the hardcoded passcode check in the AdminPasscodeGate component (`frontend/src/components/AdminPasscodeGate.tsx`) and the Admin Panel route with a proper username + password login form. The form must have two fields: a 'Username' text input and a 'Password' password input. On submission, call the backend `verifyAdminCredentials` function. If it returns true, persist the authenticated state in sessionStorage and show the Admin Panel. If it returns false, display an inline error message 'Invalid username or password.' Do not allow access until valid credentials are confirmed by the backend. The 'Lock / Sign Out' button in the Admin Panel header must continue to clear the sessionStorage session and return the user to the login form. On the Home Page (`frontend/src/pages/HomePage.tsx`), update the admin access notice to display the default credentials (username: admin, password: admin1234) so users know how to log in.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "need to create admin user id  & password"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The Admin Panel route shows a username + password login form before granting access.",
-        "Submitting correct credentials (verified by backend) grants access and persists the session in sessionStorage.",
-        "Submitting incorrect credentials shows 'Invalid username or password.' inline without granting access.",
-        "The 'Lock / Sign Out' button clears the sessionStorage session and returns to the login form.",
-        "The Home Page displays the default admin credentials (username: admin, password: admin1234) in a clearly visible location.",
-        "On page refresh within the same session, the user is not re-prompted for credentials."
-      ]
-    },
-    {
-      "id": "REQ-45",
-      "text": "Add a 'Change Admin Credentials' section inside the Admin Panel (visible only after successful login). This section must contain a form with three fields: 'New Username', 'New Password', and 'Confirm Password'. On submission, validate that the new username is non-empty, the password is at least 6 characters, and the two password fields match. If valid, call the backend `setAdminCredentials` function to update the stored credentials and display a success message. If validation fails, display appropriate inline error messages. Clear the form fields after a successful update.",
+      "id": "REQ-51",
+      "text": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members. Audit the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) and the `useUploadPDF` mutation hook in `frontend/src/hooks/useQueries.ts` to identify why the assignment fails: (1) verify the faculty selector inside the form correctly populates the list of active faculty members from the backend; (2) ensure the selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call; (3) ensure no pre-flight admin credential re-check short-circuits the submission before the backend is contacted; (4) ensure the backend `uploadPDF` function in `backend/main.mo` accepts the faculty assignment parameter and persists the assignment without requiring a secondary authorization token — the sessionStorage flag set by AdminPasscodeGate is the sole auth signal; (5) after a successful upload, invalidate and refetch the PDF list query so the table reflects the newly assigned PDF immediately.",
       "target": "both",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "need to create admin user id  & password"
+          "im not able to assign pdf to faculty"
         ]
       },
       "acceptanceCriteria": [
-        "A 'Change Admin Credentials' form is present and visible within the Admin Panel after login.",
-        "The form contains New Username, New Password, and Confirm Password fields.",
-        "Submitting with a non-empty username, password of at least 6 characters, and matching password fields calls setAdminCredentials on the backend.",
-        "A success message is displayed after credentials are updated successfully.",
-        "Inline validation errors are shown for empty username, password too short, or mismatched passwords.",
-        "Form fields are cleared after a successful update."
+        "The PDF upload form in the Admin Panel displays a populated list of active faculty members to assign to.",
+        "Selecting one or more faculty members and submitting the form successfully calls the backend uploadPDF function with the selected faculty IDs.",
+        "No admin credential prompt or authorization error appears when the user is already authenticated via AdminPasscodeGate.",
+        "The backend uploadPDF function persists the faculty assignment without requiring any additional credential token from the frontend.",
+        "After a successful upload, the PDF list table refreshes and shows the new PDF with the correct assigned faculty names.",
+        "If the PDF upload or faculty assignment fails, a descriptive error message is shown inline in the form."
+      ]
+    },
+    {
+      "id": "REQ-52",
+      "text": "Audit the backend `uploadPDF` function in `backend/main.mo` to ensure it does not enforce any caller-identity or admin-only access control check that would reject the call when invoked from the already-authenticated Admin Panel session. The function must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant. Remove or disable any `assert`, `isAdmin` check, or caller-principal guard that causes it to return an authorization error.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "im not able to assign pdf to faculty"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The backend uploadPDF function does not contain any caller-principal assertion or isAdmin guard that rejects the call.",
+        "Calling uploadPDF with a valid title, base64 PDF content, and a non-empty array of faculty IDs returns a success variant.",
+        "The stored PDF record includes the assigned faculty IDs and is retrievable via the getPDFsByFaculty and getAllPDFs functions.",
+        "The function returns a descriptive error variant only for genuine failures such as plan PDF limit exceeded, not for authorization reasons."
+      ]
+    },
+    {
+      "id": "REQ-53",
+      "text": "Update the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) so that: (1) the faculty multi-select field fetches and renders the current list of active faculty members from the backend on mount; (2) the user can select one or more faculty members before submitting; (3) the `useUploadPDF` mutation in `frontend/src/hooks/useQueries.ts` calls `actor.uploadPDF(title, base64Content, selectedFacultyIds)` without any additional admin credential argument; (4) on success, the PDF list query is invalidated and refetched; (5) on failure, the specific error returned by the backend (e.g., PDF limit exceeded) is shown inline in the form.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "im not able to assign pdf to faculty"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The faculty selector in PDFUploadForm shows all active faculty members fetched from the backend.",
+        "At least one faculty member must be selected before the form allows submission.",
+        "The mutation calls actor.uploadPDF with title, base64 content, and the array of selected faculty IDs — no admin token argument.",
+        "On successful submission, the PDF list table is automatically refreshed.",
+        "Error messages from the backend (e.g., PDF limit reached) are displayed inline without crashing the form."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any file listed under frontend.immutablePaths.",
-    "All Motoko logic must remain in the single backend/main.mo actor file.",
-    "The existing sessionStorage-based session persistence mechanism must be retained.",
-    "Default admin credentials (username: admin, password: admin1234) must be preserved as the initial state so the system is always accessible on first deploy."
+    "Do not re-introduce any secondary admin credential check inside PDFUploadForm, useUploadPDF, or the backend uploadPDF function.",
+    "The sessionStorage flag set by AdminPasscodeGate remains the sole source of truth for admin authentication within the session.",
+    "Do not modify files under frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts, frontend/src/main.tsx, or frontend/src/components/ui."
   ],
   "nonGoals": [
-    "Multi-admin or role-based admin accounts — only a single admin credential record is required.",
-    "Internet Identity integration for admin authentication.",
-    "Email-based password reset or recovery flows.",
-    "Cryptographic password hashing libraries (simple secure comparison in Motoko is sufficient)."
+    "Changing the PDF data model or annotation system.",
+    "Altering the subscription plan enforcement logic beyond what is needed to unblock PDF upload.",
+    "Modifying the faculty creation flow (already addressed in prior requirements)."
   ],
   "imageRequirements": {
     "required": [],

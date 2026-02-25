@@ -11,6 +11,7 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export interface Annotation {
+  'id' : bigint,
   'fillColor' : [] | [string],
   'imageData' : [] | [string],
   'endX' : [] | [number],
@@ -22,21 +23,17 @@ export interface Annotation {
   'shapeType' : [] | [string],
   'coordinates' : string,
 }
-export interface Faculty { 'id' : bigint, 'active' : boolean, 'name' : string }
-export type FacultyCreateResult = { 'error' : string } |
-  { 'limitReached' : bigint } |
+export type AnnotationCreateResult = { 'error' : string } |
   { 'success' : null };
-export interface FacultyWithPdfCount {
-  'faculty' : Faculty,
-  'pdfCount' : bigint,
-}
-export interface PDF {
-  'id' : bigint,
-  'title' : string,
-  'content' : string,
-  'taught' : boolean,
-  'uploadDate' : bigint,
-  'facultyIds' : Array<bigint>,
+export type AnnotationDeleteResult = { 'error' : string } |
+  { 'success' : null };
+export type AnnotationUpdateResult = { 'error' : string } |
+  { 'success' : null };
+export type SyncResult = { 'error' : string } |
+  { 'success' : SyncState };
+export interface SyncState {
+  'unsyncedChanges' : bigint,
+  'lastSyncTimestamp' : bigint,
 }
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
@@ -44,35 +41,16 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addAnnotation' : ActorMethod<[Annotation], AnnotationCreateResult>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'createFaculty' : ActorMethod<[string], FacultyCreateResult>,
-  'getAllFacultyWithPdfCount' : ActorMethod<[], Array<FacultyWithPdfCount>>,
-  'getAnnotationsByPDF' : ActorMethod<[bigint], Array<Annotation>>,
+  'deleteAnnotation' : ActorMethod<[bigint], AnnotationDeleteResult>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getFaculty' : ActorMethod<[], Array<Faculty>>,
-  'getPDFsByFaculty' : ActorMethod<[bigint], Array<PDF>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'markAsTaught' : ActorMethod<[bigint], undefined>,
-  'resetAdminCredentials' : ActorMethod<[], boolean>,
-  'saveAnnotation' : ActorMethod<
-    [
-      bigint,
-      bigint,
-      string,
-      string,
-      [] | [number],
-      [] | [number],
-      [] | [string],
-      [] | [string],
-      [] | [string],
-    ],
-    bigint
-  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'setAdminCredentials' : ActorMethod<[string, string], boolean>,
-  'verifyAdminCredentials' : ActorMethod<[string, string], boolean>,
+  'syncAnnotations' : ActorMethod<[], SyncResult>,
+  'updateAnnotation' : ActorMethod<[Annotation], AnnotationUpdateResult>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

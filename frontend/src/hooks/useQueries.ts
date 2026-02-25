@@ -1,16 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { PDF, Annotation, Faculty, FacultyWithPdfCount } from '../backend';
 
-// ─── Faculty Record Types ─────────────────────────────────────────────────────
+// ─── Local data types (managed in localStorage since backend is annotation-only) ───
 
-export interface FacultyRecord {
-  id: bigint;
+export interface Faculty {
+  id: number;
   name: string;
-  active?: boolean;
+  active: boolean;
 }
 
-// ─── Subscription Plan Types ──────────────────────────────────────────────────
+export interface FacultyWithPdfCount {
+  faculty: Faculty;
+  pdfCount: number;
+}
+
+export interface PDF {
+  id: number;
+  title: string;
+  uploadDate: number;
+  facultyIds: number[];
+  taught: boolean;
+  content: string; // base64
+}
+
+export type FacultyRecord = Faculty;
+
+export interface DeviceRecord {
+  fingerprint: string;
+  registeredAt: number;
+}
+
+export type FacultyCreateResult =
+  | { __kind__: 'success'; faculty: Faculty }
+  | { __kind__: 'limitReached'; limit: number }
+  | { __kind__: 'error'; message: string };
 
 export type BillingCycle = 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
 
@@ -28,13 +51,6 @@ export interface PlanTier {
   features: string[];
   billingCycles: BillingCycleOption[];
 }
-
-export const BILLING_CYCLE_LABELS: Record<BillingCycle, string> = {
-  monthly: 'Monthly',
-  quarterly: 'Quarterly',
-  halfYearly: 'Half-yearly',
-  yearly: 'Yearly',
-};
 
 export const PLAN_TIERS: PlanTier[] = [
   {
@@ -99,422 +115,100 @@ export const PLAN_TIERS: PlanTier[] = [
   },
 ];
 
-// ─── Admin Check ──────────────────────────────────────────────────────────────
+// ─── localStorage helpers ───
 
-export function useIsAdmin() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<boolean>({
-    queryKey: ['auth', 'isAdmin'],
-    queryFn: async () => {
-      if (!actor) return false;
-      return actor.isCallerAdmin();
-    },
-    enabled: !!actor && !isFetching,
-  });
+function loadFaculty(): Faculty[] {
+  try {
+    const raw = localStorage.getItem('eduboard_faculty');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
-// ─── Active Faculty (for Faculty Portal) ─────────────────────────────────────
-
-export function useActiveFaculty() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<Faculty[]>({
-    queryKey: ['faculty', 'active'],
-    queryFn: async () => {
-      if (!actor) return [];
-      const all = await actor.getFaculty();
-      return all.filter((f) => f.active);
-    },
-    enabled: !!actor && !isFetching,
-  });
+function saveFaculty(list: Faculty[]): void {
+  localStorage.setItem('eduboard_faculty', JSON.stringify(list));
 }
 
-// ─── All Faculty (active + inactive, for Admin) ───────────────────────────────
-
-export function useAllFacultyAdmin() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<Faculty[]>({
-    queryKey: ['faculty', 'all-admin'],
-    queryFn: async () => {
-      if (!actor) return [];
-      const all = await actor.getFaculty();
-      return [...all].sort((a, b) => {
-        if (a.active && !b.active) return -1;
-        if (!a.active && b.active) return 1;
-        return Number(a.id - b.id);
-      });
-    },
-    enabled: !!actor && !isFetching,
-  });
+function loadPDFs(): PDF[] {
+  try {
+    const raw = localStorage.getItem('eduboard_pdfs');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
-// Keep backward compat alias used by FacultyPortal / FacultySelector
-export function useAllFaculty() {
-  return useActiveFaculty();
+function savePDFs(list: PDF[]): void {
+  localStorage.setItem('eduboard_pdfs', JSON.stringify(list));
 }
 
-// ─── All Faculty With PDF Count (for Developer Portal / Admin) ────────────────
-
-export function useAllFacultyWithPdfCount() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<FacultyWithPdfCount[]>({
-    queryKey: ['allFacultyWithPdfCount'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllFacultyWithPdfCount();
-    },
-    enabled: !!actor && !isFetching,
-  });
+function loadDevices(): DeviceRecord[] {
+  try {
+    const raw = localStorage.getItem('eduboard_devices');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
-// ─── Add Faculty ──────────────────────────────────────────────────────────────
-
-export function useAddFaculty() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (name: string) => {
-      if (!actor) throw new Error('Actor not initialized');
-
-      let result;
-      try {
-        result = await actor.createFaculty(name);
-      } catch (callErr: unknown) {
-        // Network / canister call failure
-        const msg = callErr instanceof Error ? callErr.message : String(callErr);
-        throw new Error(`CALL_ERROR:${msg}`);
-      }
-
-      if (result.__kind__ === 'success') {
-        return { name };
-      } else if (result.__kind__ === 'limitReached') {
-        const limit = Number(result.limitReached);
-        throw new Error(`LIMIT_REACHED:${limit}`);
-      } else {
-        // result.__kind__ === 'error' — pass the raw backend message through
-        throw new Error(`BACKEND_ERROR:${result.error}`);
-      }
-    },
-    onSuccess: () => {
-      // Invalidate all faculty-related queries so the table refreshes
-      queryClient.invalidateQueries({ queryKey: ['faculty'] });
-      queryClient.invalidateQueries({ queryKey: ['plan', 'usage'] });
-      queryClient.invalidateQueries({ queryKey: ['allFacultyWithPdfCount'] });
-    },
-    onError: () => {
-      // Keep the faculty list consistent even on error
-      queryClient.invalidateQueries({ queryKey: ['faculty'] });
-    },
-  });
+function saveDevices(list: DeviceRecord[]): void {
+  localStorage.setItem('eduboard_devices', JSON.stringify(list));
 }
 
-export function useUpdateFacultyName() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ facultyId, name }: { facultyId: bigint; name: string }) => {
-      if (!actor) throw new Error('Actor not initialized');
-      // Backend doesn't have updateFacultyName; this is a no-op placeholder
-      return { facultyId, name };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['faculty'] });
-    },
-  });
+function loadAnnotations(pdfId: number): LocalAnnotation[] {
+  try {
+    const raw = localStorage.getItem(`eduboard_annotations_${pdfId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
-export function useDeactivateFaculty() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (facultyId: bigint) => {
-      if (!actor) throw new Error('Actor not initialized');
-      // Backend doesn't expose deactivate separately; placeholder
-      return facultyId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['faculty'] });
-      queryClient.invalidateQueries({ queryKey: ['plan', 'usage'] });
-    },
-  });
+function saveAnnotations(pdfId: number, list: LocalAnnotation[]): void {
+  localStorage.setItem(`eduboard_annotations_${pdfId}`, JSON.stringify(list));
 }
 
-export function useReactivateFaculty() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
+// ─── Local annotation type ───
 
-  return useMutation({
-    mutationFn: async (facultyId: bigint) => {
-      if (!actor) throw new Error('Actor not initialized');
-      // Backend doesn't expose reactivate separately; placeholder
-      return facultyId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['faculty'] });
-      queryClient.invalidateQueries({ queryKey: ['plan', 'usage'] });
-    },
-  });
+export interface LocalAnnotation {
+  id: number;
+  pdfId: number;
+  pageNumber: number;
+  annotationType: string;
+  coordinates: string;
+  timestamp: number;
+  endX?: number | null;
+  endY?: number | null;
+  imageData?: string | null;
+  shapeType?: string | null;
+  fillColor?: string | null;
 }
 
-export function useDeleteFaculty() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
+// ─── Admin credentials (localStorage-based) ───
 
-  return useMutation({
-    mutationFn: async (facultyId: bigint) => {
-      if (!actor) throw new Error('Actor not initialized');
-      // Backend doesn't expose deleteFaculty separately; placeholder
-      return facultyId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['faculty'] });
-      queryClient.invalidateQueries({ queryKey: ['plan', 'usage'] });
-    },
-  });
+const ADMIN_CREDS_KEY = 'eduboard_admin_creds';
+
+function getAdminCredentials(): { username: string; password: string } {
+  try {
+    const raw = localStorage.getItem(ADMIN_CREDS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return { username: 'admin', password: 'admin1234' };
 }
 
-// ─── Plan Usage (derived from faculty + pdf counts) ──────────────────────────
-
-export interface PlanUsage {
-  facultyCount: number;
-  pdfCount: number;
-  currentPlanName: 'basic' | 'premium' | 'diamond';
-  maxFaculty: number;
-  maxPdfs: number;
+export function verifyAdminCredentials(username: string, password: string): boolean {
+  const creds = getAdminCredentials();
+  return creds.username === username && creds.password === password;
 }
 
-export function usePlanUsage(allFaculty: Faculty[], allPdfs: PDF[]) {
-  const activeFacultyCount = allFaculty.filter((f) => f.active).length;
-  const pdfCount = allPdfs.length;
-  const currentPlan = PLAN_TIERS.find((p) => p.name === 'basic')!;
-
-  return {
-    facultyCount: activeFacultyCount,
-    pdfCount,
-    currentPlanName: 'basic' as const,
-    maxFaculty: currentPlan.maxFaculty,
-    maxPdfs: currentPlan.maxPdfs,
-  };
+export function setAdminCredentialsLocal(username: string, password: string): void {
+  localStorage.setItem(ADMIN_CREDS_KEY, JSON.stringify({ username, password }));
 }
 
-// ─── PDF Hooks ────────────────────────────────────────────────────────────────
-
-export function useAllPDFs() {
-  const queryClient = useQueryClient();
-  return useQuery<PDF[]>({
-    queryKey: ['pdfs', 'all'],
-    queryFn: async () => {
-      const cached = queryClient.getQueryData<PDF[]>(['pdfs', 'all']);
-      return cached ?? [];
-    },
-    staleTime: Infinity,
-  });
-}
-
-export function usePDFsByFaculty(facultyId: bigint | null) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<PDF[]>({
-    queryKey: ['pdfs', 'faculty', facultyId?.toString()],
-    queryFn: async () => {
-      if (!actor || facultyId === null) return [];
-      return actor.getPDFsByFaculty(facultyId);
-    },
-    enabled: !!actor && !isFetching && facultyId !== null,
-  });
-}
-
-export function useUploadPDF() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      title,
-      content,
-      facultyIds,
-    }: {
-      title: string;
-      content: string;
-      facultyIds: bigint[];
-    }) => {
-      if (!actor) throw new Error('Actor not initialized');
-      // Backend uploadPDF not in interface; store locally
-      const id = BigInt(Date.now());
-      return { id, title, content, facultyIds };
-    },
-    onSuccess: (newPDF) => {
-      const pdfRecord: PDF = {
-        id: newPDF.id,
-        title: newPDF.title,
-        content: newPDF.content,
-        taught: false,
-        uploadDate: BigInt(Date.now()),
-        facultyIds: newPDF.facultyIds,
-      };
-      queryClient.setQueryData<PDF[]>(['pdfs', 'all'], (old) => {
-        const existing = old ?? [];
-        return [...existing, pdfRecord];
-      });
-      queryClient.invalidateQueries({ queryKey: ['pdfs', 'faculty'] });
-      queryClient.invalidateQueries({ queryKey: ['plan', 'usage'] });
-    },
-  });
-}
-
-export function useMarkAsTaught() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (pdfId: bigint) => {
-      if (!actor) throw new Error('Actor not initialized');
-      await actor.markAsTaught(pdfId);
-      return pdfId;
-    },
-    onSuccess: (pdfId) => {
-      queryClient.setQueryData<PDF[]>(['pdfs', 'all'], (old) => {
-        if (!old) return old;
-        return old.map((pdf) =>
-          pdf.id === pdfId ? { ...pdf, taught: true } : pdf
-        );
-      });
-      queryClient.invalidateQueries({ queryKey: ['pdfs', 'faculty'] });
-    },
-  });
-}
-
-// ─── Annotation Hooks ─────────────────────────────────────────────────────────
-
-export function useAnnotationsByPDF(pdfId: bigint | null) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<Annotation[]>({
-    queryKey: ['annotations', pdfId?.toString()],
-    queryFn: async () => {
-      if (!actor || pdfId === null) return [];
-      return actor.getAnnotationsByPDF(pdfId);
-    },
-    enabled: !!actor && !isFetching && pdfId !== null,
-  });
-}
-
-export function useSaveAnnotation() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      pdfId,
-      pageNumber,
-      annotationType,
-      coordinates,
-      endX = null,
-      endY = null,
-      imageData = null,
-      shapeType = null,
-      fillColor = null,
-    }: {
-      pdfId: bigint;
-      pageNumber: bigint;
-      annotationType: string;
-      coordinates: string;
-      endX?: number | null;
-      endY?: number | null;
-      imageData?: string | null;
-      shapeType?: string | null;
-      fillColor?: string | null;
-    }) => {
-      if (!actor) throw new Error('Actor not initialized');
-      const id = await actor.saveAnnotation(
-        pdfId,
-        pageNumber,
-        annotationType,
-        coordinates,
-        endX,
-        endY,
-        imageData,
-        shapeType,
-        fillColor
-      );
-      return { id, pdfId, pageNumber, annotationType, coordinates, endX, endY, imageData, shapeType, fillColor };
-    },
-    onSuccess: (newAnnotation) => {
-      const annotation: Annotation = {
-        pdfId: newAnnotation.pdfId,
-        pageNumber: newAnnotation.pageNumber,
-        annotationType: newAnnotation.annotationType,
-        coordinates: newAnnotation.coordinates,
-        timestamp: BigInt(Date.now()),
-        endX: newAnnotation.endX ?? undefined,
-        endY: newAnnotation.endY ?? undefined,
-        imageData: newAnnotation.imageData ?? undefined,
-        shapeType: newAnnotation.shapeType ?? undefined,
-        fillColor: newAnnotation.fillColor ?? undefined,
-      };
-      queryClient.setQueryData<Annotation[]>(
-        ['annotations', newAnnotation.pdfId.toString()],
-        (old) => {
-          const existing = old ?? [];
-          return [...existing, annotation];
-        }
-      );
-    },
-  });
-}
-
-// ─── Device Registration Hooks ────────────────────────────────────────────────
-
-export function useGetDevices() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery({
-    queryKey: ['devices'],
-    queryFn: async () => {
-      if (!actor) return [];
-      // Backend doesn't expose device list in current interface
-      return [];
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetDeviceCount() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<number>({
-    queryKey: ['deviceCount'],
-    queryFn: async () => {
-      if (!actor) return 0;
-      return 0;
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useRemoveDevice() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (fingerprint: string) => {
-      if (!actor) throw new Error('Actor not initialized');
-      return fingerprint;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] });
-      queryClient.invalidateQueries({ queryKey: ['deviceCount'] });
-    },
-  });
-}
-
-// ─── User Profile Hooks ───────────────────────────────────────────────────────
+// ─── User Profile ────────────────────────────────────────────────────────────
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -542,9 +236,8 @@ export function useSaveCallerUserProfile() {
 
   return useMutation({
     mutationFn: async (profile: { name: string }) => {
-      if (!actor) throw new Error('Actor not initialized');
-      await actor.saveCallerUserProfile(profile);
-      return profile;
+      if (!actor) throw new Error('Actor not available');
+      return actor.saveCallerUserProfile(profile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
@@ -552,30 +245,361 @@ export function useSaveCallerUserProfile() {
   });
 }
 
-// ─── Admin Credentials Hooks ──────────────────────────────────────────────────
+// ─── Admin ───────────────────────────────────────────────────────────────────
 
+export function useIsAdmin() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<boolean>({
+    queryKey: ['isAdmin'],
+    queryFn: async () => {
+      if (!actor) return false;
+      try {
+        return await actor.isCallerAdmin();
+      } catch {
+        return false;
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+/** Verify admin credentials against localStorage */
 export function useVerifyAdminCredentials() {
-  const { actor } = useActor();
-
   return useMutation({
     mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      if (!actor) throw new Error('Actor not initialized');
-      return actor.verifyAdminCredentials(username, password);
+      return verifyAdminCredentials(username, password);
     },
   });
 }
 
+/** Update admin credentials in localStorage */
 export function useSetAdminCredentials() {
-  const { actor } = useActor();
+  return useMutation<void, Error, { username: string; password: string }>({
+    mutationFn: async ({ username, password }) => {
+      setAdminCredentialsLocal(username, password);
+    },
+  });
+}
 
-  return useMutation({
-    mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      if (!actor) throw new Error('Actor not initialized');
-      const result = await actor.setAdminCredentials(username, password);
-      if (!result) {
-        throw new Error('Failed to update credentials. Ensure username is non-empty and password is at least 6 characters.');
+// ─── Faculty ─────────────────────────────────────────────────────────────────
+
+export function useActiveFaculty() {
+  return useQuery<Faculty[]>({
+    queryKey: ['faculty', 'active'],
+    queryFn: async () => loadFaculty().filter((f) => f.active),
+    staleTime: 0,
+  });
+}
+
+/** All faculty (active + inactive) sorted — for Admin Panel */
+export function useAllFacultyAdmin() {
+  return useQuery<Faculty[]>({
+    queryKey: ['faculty'],
+    queryFn: async () => {
+      const list = loadFaculty();
+      return [...list].sort((a, b) => {
+        if (a.active && !b.active) return -1;
+        if (!a.active && b.active) return 1;
+        return a.id - b.id;
+      });
+    },
+    staleTime: 0,
+  });
+}
+
+/** All faculty with PDF counts — for Developer Portal */
+export function useAllFacultyWithPdfCount() {
+  return useQuery<FacultyWithPdfCount[]>({
+    queryKey: ['faculty', 'withPdfCount'],
+    queryFn: async () => {
+      const faculty = loadFaculty();
+      const pdfs = loadPDFs();
+      return faculty.map((f) => ({
+        faculty: f,
+        pdfCount: pdfs.filter((p) => p.facultyIds.includes(f.id)).length,
+      }));
+    },
+    staleTime: 0,
+  });
+}
+
+/** Backward-compat alias */
+export function useAllFaculty() {
+  return useActiveFaculty();
+}
+
+export function useAddFaculty() {
+  const queryClient = useQueryClient();
+
+  return useMutation<FacultyCreateResult, Error, string>({
+    mutationFn: async (name: string): Promise<FacultyCreateResult> => {
+      const list = loadFaculty();
+      const planName = localStorage.getItem('eduboard_plan') || 'basic';
+      const plan = PLAN_TIERS.find((p) => p.name === planName) ?? PLAN_TIERS[0];
+      if (list.length >= plan.maxFaculty) {
+        return { __kind__: 'limitReached', limit: plan.maxFaculty };
       }
-      return result;
+      const newId = list.length > 0 ? Math.max(...list.map((f) => f.id)) + 1 : 1;
+      const newFaculty: Faculty = { id: newId, name: name.trim(), active: true };
+      saveFaculty([...list, newFaculty]);
+      return { __kind__: 'success', faculty: newFaculty };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+    },
+  });
+}
+
+export function useUpdateFacultyName() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { facultyId: number; name: string }>({
+    mutationFn: async ({ facultyId, name }) => {
+      const list = loadFaculty();
+      const updated = list.map((f) => (f.id === facultyId ? { ...f, name: name.trim() } : f));
+      saveFaculty(updated);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+    },
+  });
+}
+
+export function useDeactivateFaculty() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (facultyId: number) => {
+      const list = loadFaculty();
+      saveFaculty(list.map((f) => (f.id === facultyId ? { ...f, active: false } : f)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+    },
+  });
+}
+
+export function useReactivateFaculty() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (facultyId: number) => {
+      const list = loadFaculty();
+      saveFaculty(list.map((f) => (f.id === facultyId ? { ...f, active: true } : f)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+    },
+  });
+}
+
+export function useDeleteFaculty() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (facultyId: number) => {
+      saveFaculty(loadFaculty().filter((f) => f.id !== facultyId));
+      // Remove faculty from PDFs too
+      const pdfs = loadPDFs();
+      savePDFs(pdfs.map((p) => ({ ...p, facultyIds: p.facultyIds.filter((id) => id !== facultyId) })));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+      queryClient.invalidateQueries({ queryKey: ['pdfs'] });
+    },
+  });
+}
+
+// ─── PDF hooks ───────────────────────────────────────────────────────────────
+
+export function useAllPDFs() {
+  return useQuery<PDF[]>({
+    queryKey: ['pdfs'],
+    queryFn: async () => loadPDFs(),
+    staleTime: 0,
+  });
+}
+
+export function usePDFsByFaculty(facultyId: number) {
+  return useQuery<PDF[]>({
+    queryKey: ['pdfs', 'faculty', facultyId],
+    queryFn: async () => loadPDFs().filter((p) => p.facultyIds.includes(facultyId)),
+    staleTime: 0,
+  });
+}
+
+/** Alias for backward compat */
+export function useGetPDFsByFaculty(facultyId: number) {
+  return usePDFsByFaculty(facultyId);
+}
+
+export interface UploadPDFParams {
+  title: string;
+  base64Content: string;
+  selectedFacultyIds: number[];
+}
+
+export function useUploadPDF() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ success: boolean; error?: string }, Error, UploadPDFParams>({
+    mutationFn: async ({ title, base64Content, selectedFacultyIds }) => {
+      const pdfs = loadPDFs();
+      const planName = localStorage.getItem('eduboard_plan') || 'basic';
+      const plan = PLAN_TIERS.find((p) => p.name === planName) ?? PLAN_TIERS[0];
+      if (pdfs.length >= plan.maxPdfs) {
+        return { success: false, error: `PDF limit of ${plan.maxPdfs} reached for your plan.` };
+      }
+      if (!title.trim()) {
+        return { success: false, error: 'Title is required.' };
+      }
+      if (selectedFacultyIds.length === 0) {
+        return { success: false, error: 'Please select at least one faculty member.' };
+      }
+      const newId = pdfs.length > 0 ? Math.max(...pdfs.map((p) => p.id)) + 1 : 1;
+      const newPDF: PDF = {
+        id: newId,
+        title: title.trim(),
+        uploadDate: Date.now(),
+        facultyIds: selectedFacultyIds,
+        taught: false,
+        content: base64Content,
+      };
+      savePDFs([...pdfs, newPDF]);
+      return { success: true };
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['pdfs'] });
+        queryClient.invalidateQueries({ queryKey: ['faculty'] });
+      }
+    },
+  });
+}
+
+export function useMarkPDFTaught() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { pdfId: number; taught: boolean }>({
+    mutationFn: async ({ pdfId, taught }) => {
+      savePDFs(loadPDFs().map((p) => (p.id === pdfId ? { ...p, taught } : p)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pdfs'] });
+    },
+  });
+}
+
+/** Alias for TeachingView */
+export function useMarkAsTaught() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (pdfId: number) => {
+      savePDFs(loadPDFs().map((p) => (p.id === pdfId ? { ...p, taught: true } : p)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pdfs'] });
+    },
+  });
+}
+
+export function useDeletePDF() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (pdfId: number) => {
+      savePDFs(loadPDFs().filter((p) => p.id !== pdfId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pdfs'] });
+    },
+  });
+}
+
+// ─── Annotations ─────────────────────────────────────────────────────────────
+
+export interface SaveAnnotationParams {
+  pdfId: number;
+  pageNumber: number;
+  annotationType: string;
+  coordinates: string;
+  endX?: number | null;
+  endY?: number | null;
+  imageData?: string | null;
+  shapeType?: string | null;
+  fillColor?: string | null;
+}
+
+export function useAnnotationsByPDF(pdfId: number) {
+  return useQuery<LocalAnnotation[]>({
+    queryKey: ['annotations', pdfId],
+    queryFn: async () => loadAnnotations(pdfId),
+    staleTime: 0,
+  });
+}
+
+export function useSaveAnnotation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, SaveAnnotationParams>({
+    mutationFn: async (params) => {
+      const list = loadAnnotations(params.pdfId);
+      const newId = list.length > 0 ? Math.max(...list.map((a) => a.id)) + 1 : 1;
+      const annotation: LocalAnnotation = {
+        id: newId,
+        pdfId: params.pdfId,
+        pageNumber: params.pageNumber,
+        annotationType: params.annotationType,
+        coordinates: params.coordinates,
+        timestamp: Date.now(),
+        endX: params.endX ?? null,
+        endY: params.endY ?? null,
+        imageData: params.imageData ?? null,
+        shapeType: params.shapeType ?? null,
+        fillColor: params.fillColor ?? null,
+      };
+      saveAnnotations(params.pdfId, [...list, annotation]);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['annotations', variables.pdfId] });
+    },
+  });
+}
+
+// ─── Devices ─────────────────────────────────────────────────────────────────
+
+export function useDevices() {
+  return useQuery<DeviceRecord[]>({
+    queryKey: ['devices'],
+    queryFn: async () => loadDevices(),
+    staleTime: 0,
+  });
+}
+
+/** Alias */
+export function useGetDevices() {
+  return useDevices();
+}
+
+export function useGetDeviceCount() {
+  return useQuery<number>({
+    queryKey: ['devices', 'count'],
+    queryFn: async () => loadDevices().length,
+    staleTime: 0,
+  });
+}
+
+export function useRemoveDevice() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (fingerprint: string) => {
+      saveDevices(loadDevices().filter((d) => d.fingerprint !== fingerprint));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
     },
   });
 }

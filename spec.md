@@ -1,13 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Replace the existing passcode-based admin gate with a proper username + password authentication system, backed by stored credentials in the backend.
+**Goal:** Fix the PDF-to-faculty assignment flow in the EduBoard Admin Panel so admins can successfully upload a PDF and assign it to one or more faculty members.
 
 **Planned changes:**
-- Add a stable admin credentials record to the backend with default username `admin` and password `admin1234`, exposed via `verifyAdminCredentials` and `setAdminCredentials` actor methods.
-- Replace the `AdminPasscodeGate` component with a two-field login form (Username + Password) that calls `verifyAdminCredentials` on the backend; persist session in sessionStorage on success and show inline error on failure.
-- Keep the existing "Lock / Sign Out" button behavior (clears sessionStorage, returns to login form).
-- Update the Home Page admin access notice to display the default credentials (username: admin, password: admin1234).
-- Add a "Change Admin Credentials" form inside the Admin Panel with New Username, New Password, and Confirm Password fields; validate inputs and call `setAdminCredentials` on success, showing appropriate success or error messages.
+- Audit and fix `PDFUploadForm` to correctly fetch and display the list of active faculty members from the backend on mount.
+- Ensure selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call without any extra admin credential argument.
+- Remove any pre-flight admin credential re-check or caller-principal guard in `useUploadPDF` mutation hook that short-circuits submission.
+- Fix the backend `uploadPDF` function in `backend/main.mo` to accept title, base64 content, and an array of faculty IDs, removing any `assert`, `isAdmin`, or caller-principal guard that causes authorization errors.
+- Ensure the backend persists the faculty assignment and returns a well-typed success or error variant.
+- Invalidate and refetch the PDF list query after a successful upload so the table reflects the new entry immediately.
+- Display inline error messages (e.g., PDF limit exceeded) when upload or assignment fails.
 
-**User-visible outcome:** Admins log in with a username and password instead of a passcode, can change their credentials from within the Admin Panel, and the Home Page shows the default login details for first-time access.
+**User-visible outcome:** Admins authenticated via AdminPasscodeGate can upload a PDF, select one or more faculty members, submit the form without errors, and immediately see the newly assigned PDF appear in the PDF list table.

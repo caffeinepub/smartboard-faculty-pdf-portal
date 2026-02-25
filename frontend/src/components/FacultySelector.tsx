@@ -8,12 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { FacultyRecord } from '@/hooks/useQueries';
+import type { Faculty } from '../hooks/useQueries';
 
 interface FacultySelectorProps {
-  facultyList: FacultyRecord[];
+  facultyList: Faculty[];
   isLoading: boolean;
-  onSelect: (id: bigint, name: string) => void;
+  onSelect: (id: number, name: string) => void;
 }
 
 export default function FacultySelector({ facultyList, isLoading, onSelect }: FacultySelectorProps) {
@@ -60,7 +60,7 @@ export default function FacultySelector({ facultyList, isLoading, onSelect }: Fa
                 <SelectContent>
                   {facultyList.map((faculty) => (
                     <SelectItem
-                      key={faculty.id.toString()}
+                      key={faculty.id}
                       value={faculty.id.toString()}
                       className="text-base py-3"
                     >

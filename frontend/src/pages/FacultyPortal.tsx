@@ -1,77 +1,70 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { GraduationCap, LogOut, Terminal } from 'lucide-react';
+import { useActiveFaculty } from '@/hooks/useQueries';
+import FacultySelector from '../components/FacultySelector';
+import FacultyPDFList from '../components/FacultyPDFList';
+import { useFacultyContext } from '../context/FacultyContext';
 import { Button } from '@/components/ui/button';
-import FacultySelector from '@/components/FacultySelector';
-import FacultyPDFList from '@/components/FacultyPDFList';
-import { useFacultyContext } from '@/context/FacultyContext';
-import { useActiveFaculty, useIsAdmin } from '@/hooks/useQueries';
+import { LogOut, Code2 } from 'lucide-react';
 
 export default function FacultyPortal() {
   const navigate = useNavigate();
   const { selectedFacultyId, selectedFacultyName, setSelectedFaculty, clearSelectedFaculty } =
     useFacultyContext();
   const { data: facultyList = [], isLoading } = useActiveFaculty();
-  const { data: isAdmin } = useIsAdmin();
 
-  if (!selectedFacultyId || !selectedFacultyName) {
+  const handleSelect = (id: number, name: string) => {
+    setSelectedFaculty(id, name);
+  };
+
+  const handleBack = () => {
+    clearSelectedFaculty();
+  };
+
+  if (!selectedFacultyId) {
     return (
-      <div className="animate-fade-in">
+      <div className="min-h-screen bg-background">
         <FacultySelector
           facultyList={facultyList}
           isLoading={isLoading}
-          onSelect={setSelectedFaculty}
+          onSelect={handleSelect}
         />
-        {/* Hidden admin shortcut at the bottom of the selector */}
-        {isAdmin && (
-          <div className="flex justify-center pb-6">
-            <button
-              onClick={() => navigate({ to: '/dev-portal' })}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-amber-600 transition-colors"
-              title="Open Developer Portal"
-            >
-              <Terminal className="h-3 w-3" />
-              Developer Access
-            </button>
-          </div>
-        )}
+        <div className="flex justify-center pb-8">
+          <button
+            onClick={() => navigate({ to: '/dev-portal' })}
+            className="text-xs text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+          >
+            Developer Access
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <GraduationCap className="h-7 w-7 text-primary" />
+    <div className="min-h-screen bg-background">
+      {/* Header bar */}
+      <div className="sticky top-0 z-10 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+            {selectedFacultyName?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
-              Welcome, {selectedFacultyName}
-            </h1>
-            <p className="text-muted-foreground">Your assigned teaching materials</p>
+            <p className="font-semibold text-foreground text-sm">{selectedFacultyName}</p>
+            <p className="text-xs text-muted-foreground">Faculty Portal</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate({ to: '/dev-portal' })}
-              className="gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-              title="Developer Portal"
-            >
-              <Terminal className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs">Dev Portal</span>
-            </Button>
-          )}
           <Button
-            variant="outline"
-            onClick={clearSelectedFaculty}
-            className="gap-2 h-11"
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate({ to: '/dev-portal' })}
+            className="gap-1.5 text-xs text-muted-foreground"
           >
+            <Code2 className="h-3.5 w-3.5" />
+            Dev Portal
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5">
             <LogOut className="h-4 w-4" />
             Switch Faculty
           </Button>
@@ -79,7 +72,12 @@ export default function FacultyPortal() {
       </div>
 
       {/* PDF List */}
-      <FacultyPDFList facultyId={selectedFacultyId} facultyName={selectedFacultyName} />
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <FacultyPDFList
+          facultyId={selectedFacultyId}
+          facultyName={selectedFacultyName ?? ''}
+        />
+      </div>
     </div>
   );
 }

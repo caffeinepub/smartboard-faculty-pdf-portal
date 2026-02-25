@@ -1,0 +1,69 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T17:46:37.386Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 3,
+    "implemented": 2,
+    "items": [
+      {
+        "id": "REQ-43",
+        "summary": "Add a backend data model and functions for admin credentials. Store a single admin record containing a username and a hashed (or securely compared) password in stable state. Provide a backend function `setAdminCredentials(username: Text, password: Text) : async Result` to create or update admin credentials, and a function `verifyAdminCredentials(username: Text, password: Text) : async Bool` that returns true when the supplied username and password match the stored credentials. Initialize stable state with a default admin username of 'admin' and password 'admin1234' so the system is accessible on first deploy.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-44",
+        "summary": "Replace the hardcoded passcode check in the AdminPasscodeGate component (`frontend/src/components/AdminPasscodeGate.tsx`) and the Admin Panel route with a proper username + password login form. The form must have two fields: a 'Username' text input and a 'Password' password input. On submission, call the backend `verifyAdminCredentials` function. If it returns true, persist the authenticated state in sessionStorage and show the Admin Panel. If it returns false, display an inline error message 'Invalid username or password.' Do not allow access until valid credentials are confirmed by the backend. The 'Lock / Sign Out' button in the Admin Panel header must continue to clear the sessionStorage session and return the user to the login form. On the Home Page (`frontend/src/pages/HomePage.tsx`), update the admin access notice to display the default credentials (username: admin, password: admin1234) so users know how to log in.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/AdminPasscodeGate.tsx",
+          "frontend/src/pages/HomePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/AdminPasscodeGate.tsx",
+          "frontend/src/pages/HomePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-45",
+        "summary": "Add a 'Change Admin Credentials' section inside the Admin Panel (visible only after successful login). This section must contain a form with three fields: 'New Username', 'New Password', and 'Confirm Password'. On submission, validate that the new username is non-empty, the password is at least 6 characters, and the two password fields match. If valid, call the backend `setAdminCredentials` function to update the stored credentials and display a success message. If validation fails, display appropriate inline error messages. Clear the form fields after a successful update.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ChangeAdminCredentialsForm.tsx",
+          "frontend/src/pages/AdminPanel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ChangeAdminCredentialsForm.tsx",
+          "frontend/src/pages/AdminPanel.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/AdminPasscodeGate.tsx",
+    "frontend/src/components/ChangeAdminCredentialsForm.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminPanel.tsx",
+    "frontend/src/pages/HomePage.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "kind": "build_request",
+  "title": "Admin User ID & Password Authentication System",
+  "projectName": "SmartBoard Faculty Portal",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-43",
+      "text": "Add a backend data model and functions for admin credentials. Store a single admin record containing a username and a hashed (or securely compared) password in stable state. Provide a backend function `setAdminCredentials(username: Text, password: Text) : async Result` to create or update admin credentials, and a function `verifyAdminCredentials(username: Text, password: Text) : async Bool` that returns true when the supplied username and password match the stored credentials. Initialize stable state with a default admin username of 'admin' and password 'admin1234' so the system is accessible on first deploy.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "need to create admin user id  & password"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend stable state contains an admin credentials record with username and password fields.",
+        "Default credentials are initialized to username='admin' and password='admin1234' on first deploy.",
+        "verifyAdminCredentials returns true when the correct username and password are supplied.",
+        "verifyAdminCredentials returns false when either the username or password is incorrect.",
+        "setAdminCredentials updates the stored username and password and returns a success result.",
+        "Both functions are exposed as callable actor methods."
+      ]
+    },
+    {
+      "id": "REQ-44",
+      "text": "Replace the hardcoded passcode check in the AdminPasscodeGate component (`frontend/src/components/AdminPasscodeGate.tsx`) and the Admin Panel route with a proper username + password login form. The form must have two fields: a 'Username' text input and a 'Password' password input. On submission, call the backend `verifyAdminCredentials` function. If it returns true, persist the authenticated state in sessionStorage and show the Admin Panel. If it returns false, display an inline error message 'Invalid username or password.' Do not allow access until valid credentials are confirmed by the backend. The 'Lock / Sign Out' button in the Admin Panel header must continue to clear the sessionStorage session and return the user to the login form. On the Home Page (`frontend/src/pages/HomePage.tsx`), update the admin access notice to display the default credentials (username: admin, password: admin1234) so users know how to log in.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "need to create admin user id  & password"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Admin Panel route shows a username + password login form before granting access.",
+        "Submitting correct credentials (verified by backend) grants access and persists the session in sessionStorage.",
+        "Submitting incorrect credentials shows 'Invalid username or password.' inline without granting access.",
+        "The 'Lock / Sign Out' button clears the sessionStorage session and returns to the login form.",
+        "The Home Page displays the default admin credentials (username: admin, password: admin1234) in a clearly visible location.",
+        "On page refresh within the same session, the user is not re-prompted for credentials."
+      ]
+    },
+    {
+      "id": "REQ-45",
+      "text": "Add a 'Change Admin Credentials' section inside the Admin Panel (visible only after successful login). This section must contain a form with three fields: 'New Username', 'New Password', and 'Confirm Password'. On submission, validate that the new username is non-empty, the password is at least 6 characters, and the two password fields match. If valid, call the backend `setAdminCredentials` function to update the stored credentials and display a success message. If validation fails, display appropriate inline error messages. Clear the form fields after a successful update.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "need to create admin user id  & password"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A 'Change Admin Credentials' form is present and visible within the Admin Panel after login.",
+        "The form contains New Username, New Password, and Confirm Password fields.",
+        "Submitting with a non-empty username, password of at least 6 characters, and matching password fields calls setAdminCredentials on the backend.",
+        "A success message is displayed after credentials are updated successfully.",
+        "Inline validation errors are shown for empty username, password too short, or mismatched passwords.",
+        "Form fields are cleared after a successful update."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify any file listed under frontend.immutablePaths.",
+    "All Motoko logic must remain in the single backend/main.mo actor file.",
+    "The existing sessionStorage-based session persistence mechanism must be retained.",
+    "Default admin credentials (username: admin, password: admin1234) must be preserved as the initial state so the system is always accessible on first deploy."
+  ],
+  "nonGoals": [
+    "Multi-admin or role-based admin accounts — only a single admin credential record is required.",
+    "Internet Identity integration for admin authentication.",
+    "Email-based password reset or recovery flows.",
+    "Cryptographic password hashing libraries (simple secure comparison in Motoko is sufficient)."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

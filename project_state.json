@@ -1,0 +1,465 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 37,
+  "summary": "A smart board app for college use where admins upload PDFs in the backend, assign them to specific faculty, faculty can view and annotate PDFs during teaching sessions with auto-save, and the backend shows whether each PDF has been taught or not. The app should be downloadable/installable, and each license should be limited to 10 devices — additional devices attempting to log in beyond the 10-device limit should be restricted.",
+  "architectural_notes": [
+    "Role-based access: Admin (backend) and Faculty (portal/smart board)",
+    "PDF annotation with auto-save requires persistent storage per faculty per PDF",
+    "Subscription plan enforcement: access for admin and faculty features gated by subscription tier",
+    "App must be downloadable/installable (Electron desktop app or installable PWA) for smart board deployment",
+    "License enforcement: each license/login ID is limited to 10 registered devices; 11th+ device attempts must be blocked"
+  ],
+  "known_issues": [
+    "Draft Version 7 shows a completely blank page on load (likely a rendering or routing error)",
+    "Unable to create faculty from the Admin Panel (Faculty Management section)",
+    "Faculty limit incorrectly shows as reached even when no faculty members have been created (false positive limit enforcement)",
+    "Admin login credentials are missing or not provided to the user — admin access is currently inaccessible"
+  ],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-build-an-admin-panel-frontend-page-where-administrators-can-upload-pdf-files-and-assign-them-to-specific-faculty-members-view-all-uploaded-pdfs-in-a-table-showing-title-assigned-faculty-upload-date-and-taught-untaught-status",
+      "title": "Build an Admin Panel frontend page where administrators can: upload PDF files and assign them to specific faculty members, view all uploaded PDFs in a table showing title, assigned faculty, upload date, and taught/untaught status.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-faculty-portal-frontend-page-where-a-faculty-member-selects-their-name-id-to-log-in-then-sees-a-list-of-pdfs-assigned-specifically-to-them-with-each-pdf-showing-its-title-and-taught-status",
+      "title": "Build a Faculty Portal frontend page where a faculty member selects their name/ID to log in, then sees a list of PDFs assigned specifically to them, with each PDF showing its title and taught status.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-full-screen-pdf-teaching-view-optimized-for-smart-board-use-where-the-selected-pdf-is-rendered-page-by-page-and-the-faculty-member-can-annotate-on-it-using-drawing-tools-freehand-draw-highlight-text-note-annotations-must-auto-save-to-the-backend-after-each-annotation-action",
+      "title": "Build a full-screen PDF Teaching View optimized for smart board use, where the selected PDF is rendered page by page and the faculty member can annotate on it using drawing tools (freehand draw, highlight, text note). Annotations must auto-save to the backend after each annotation action.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-clean-professional-academic-visual-theme-across-the-entire-app-use-a-warm-neutral-palette-off-white-backgrounds-deep-charcoal-text-amber-gold-accents-clear-sans-serif-typography-and-a-layout-that-is-legible-at-large-display-sizes-suitable-for-smart-board-screens",
+      "title": "Apply a clean, professional academic visual theme across the entire app: use a warm neutral palette (off-white backgrounds, deep charcoal text, amber/gold accents), clear sans-serif typography, and a layout that is legible at large display sizes suitable for smart board screens.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-subscription-management-section-to-the-admin-panel-page-display-the-current-active-plan-name-pdf-upload-count-vs-limit-faculty-count-vs-limit-and-plan-expiry-date-include-plan-tier-cards-free-basic-premium-showing-their-respective-limits-and-an-upgrade-select-button-for-each-selecting-a-plan-updates-the-active-plan-in-the-backend",
+      "title": "Add a Subscription Management section to the Admin Panel page. Display the current active plan name, PDF upload count vs. limit, faculty count vs. limit, and plan expiry date. Include plan tier cards (Free, Basic, Premium) showing their respective limits and an upgrade/select button for each. Selecting a plan updates the active plan in the backend.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-faculty-management-section-to-the-admin-panel-page-with-a-table-listing-all-faculty-members-showing-their-name-active-inactive-status-and-assigned-pdf-count-each-row-should-have-edit-name-deactivate-reactivate-and-delete-action-buttons-editing-a-name-opens-an-inline-or-modal-input-deactivating-reactivating-and-deleting-show-confirmation-dialogs-before-proceeding",
+      "title": "Add a Faculty Management section to the Admin Panel page with a table listing all faculty members showing their name, active/inactive status, and assigned PDF count. Each row should have Edit (name), Deactivate/Reactivate, and Delete action buttons. Editing a name opens an inline or modal input. Deactivating/reactivating and deleting show confirmation dialogs before proceeding.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-subscription-management-section-in-the-admin-panel-frontend-to-remove-the-free-plan-card-and-display-all-three-tiers-basic-premium-diamond-with-a-billing-cycle-selector-monthly-quarterly-half-yearly-yearly-for-each-tier-each-tier-card-must-show-the-faculty-limit-pdf-limit-and-the-price-in-inr-for-the-selected-billing-cycle-the-upgrade-select-button-must-pass-both-the-tier-and-billing-cycle-to-the-backend-when-updating-the-active-plan",
+      "title": "Update the Subscription Management section in the Admin Panel frontend to remove the Free plan card and display all three tiers (Basic, Premium, Diamond) with a billing cycle selector (Monthly, Quarterly, Half-yearly, Yearly) for each tier. Each tier card must show the faculty limit, PDF limit, and the price in INR for the selected billing cycle. The upgrade/select button must pass both the tier and billing cycle to the backend when updating the active plan.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-frontend-generate-a-stable-unique-device-fingerprint-combining-available-browser-hardware-signals-such-as-user-agent-screen-resolution-canvas-fingerprint-and-a-persisted-uuid-in-localstorage-on-app-load-and-pass-it-to-the-backend-during-authentication-if-the-backend-returns-a-device-limit-error-display-a-full-screen-blocking-message-informing-the-user-that-the-device-limit-10-devices-has-been-reached-and-they-should-contact-their-administrator-the-user-must-not-be-able-to-proceed-past-this-screen",
+      "title": "On the frontend, generate a stable unique device fingerprint (combining available browser/hardware signals such as user agent, screen resolution, canvas fingerprint, and a persisted UUID in localStorage) on app load and pass it to the backend during authentication. If the backend returns a device-limit error, display a full-screen blocking message informing the user that the device limit (10 devices) has been reached and they should contact their administrator. The user must not be able to proceed past this screen.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-device-management-section-to-the-admin-panel-page-display-a-table-listing-all-registered-devices-for-the-current-license-showing-device-fingerprint-truncated-for-readability-registration-date-and-a-remove-button-for-each-device-removing-a-device-frees-up-a-slot-allowing-a-new-device-to-register-with-that-license-show-the-current-device-count-vs-the-10-device-limit-e-g-7-10-devices-used",
+      "title": "Add a Device Management section to the Admin Panel page. Display a table listing all registered devices for the current license, showing device fingerprint (truncated for readability), registration date, and a Remove button for each device. Removing a device frees up a slot, allowing a new device to register with that license. Show the current device count vs. the 10-device limit (e.g., '7 / 10 devices used').",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-the-frontend-app-installable-as-a-progressive-web-app-pwa-on-smart-board-devices-add-a-web-app-manifest-manifest-json-with-the-app-name-icons-and-display-mode-set-to-standalone-register-a-service-worker-that-caches-the-app-shell-for-offline-availability-the-install-prompt-should-be-surfaced-in-the-app-header-or-home-page-when-the-browser-supports-pwa-installation",
+      "title": "Make the frontend app installable as a Progressive Web App (PWA) on smart board devices. Add a web app manifest (manifest.json) with the app name, icons, and display mode set to 'standalone'. Register a service worker that caches the app shell for offline availability. The install prompt should be surfaced in the app header or home page when the browser supports PWA installation.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-hidden-developer-admin-override-mode-to-the-faculty-portal-include-a-way-e-g-a-dedicated-route-or-a-special-access-code-entry-on-the-faculty-selector-page-that-bypasses-the-normal-faculty-selection-flow-and-grants-access-to-all-pdfs-across-all-faculty-members-all-annotation-data-and-all-backend-management-functions-without-being-restricted-to-a-single-faculty-account",
+      "title": "Add a hidden developer/admin override mode to the Faculty Portal: include a way (e.g., a dedicated route or a special access code entry on the Faculty Selector page) that bypasses the normal faculty selection flow and grants access to all PDFs across all faculty members, all annotation data, and all backend management functions without being restricted to a single faculty account.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-create-faculty-button-to-the-faculty-management-section-in-the-admin-panel-clicking-it-should-open-a-modal-or-inline-form-with-a-text-input-for-the-faculty-member-s-name-on-submission-call-the-backend-to-create-the-new-faculty-member-and-refresh-the-faculty-list-the-form-must-validate-that-the-name-is-non-empty-and-respect-the-subscription-plan-s-faculty-limit-showing-an-appropriate-error-if-the-limit-is-exceeded",
+      "title": "Add a 'Create Faculty' button to the Faculty Management section in the Admin Panel. Clicking it should open a modal or inline form with a text input for the faculty member's name. On submission, call the backend to create the new faculty member and refresh the faculty list. The form must validate that the name is non-empty and respect the subscription plan's faculty limit, showing an appropriate error if the limit is exceeded.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-diagnose-and-fix-the-completely-blank-page-that-appears-when-the-app-loads-investigate-the-root-cause-likely-a-runtime-javascript-error-a-failed-device-registration-check-a-broken-route-definition-or-a-react-rendering-crash-and-resolve-it-so-the-homepage-renders-correctly-on-first-load",
+      "title": "Diagnose and fix the completely blank page that appears when the app loads. Investigate the root cause — likely a runtime JavaScript error, a failed device registration check, a broken route definition, or a React rendering crash — and resolve it so the HomePage renders correctly on first load.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-top-level-react-error-boundary-around-the-entire-app-so-that-if-any-component-throws-during-render-a-readable-error-message-is-shown-instead-of-a-blank-white-screen-the-error-boundary-should-display-the-error-name-and-a-reload-button",
+      "title": "Add a top-level React error boundary around the entire app so that if any component throws during render, a readable error message is shown instead of a blank white screen. The error boundary should display the error name and a 'Reload' button.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-annotationtoolbar-component-to-include-the-following-additional-tool-controls-1-a-color-picker-for-stroke-fill-color-selection-2-shape-tools-rectangle-circle-ellipse-and-triangle-3-an-arrow-tool-for-drawing-directional-arrows-4-an-image-insertion-tool-allowing-the-user-to-upload-or-select-a-local-image-to-place-on-the-canvas-5-a-straight-line-tool-and-6-a-background-highlight-light-color-picker-that-fills-a-rectangular-region-with-a-semi-transparent-pastel-color-similar-to-a-highlighter-background-all-new-tools-must-follow-the-existing-toolbar-layout-and-visual-style",
+      "title": "Extend the AnnotationToolbar component to include the following additional tool controls: (1) a color picker for stroke/fill color selection, (2) shape tools — rectangle, circle/ellipse, and triangle, (3) an arrow tool for drawing directional arrows, (4) an image insertion tool allowing the user to upload or select a local image to place on the canvas, (5) a straight line tool, and (6) a background/highlight light color picker that fills a rectangular region with a semi-transparent pastel color (similar to a highlighter background). All new tools must follow the existing toolbar layout and visual style.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-annotationcanvas-component-to-support-rendering-and-interaction-for-the-new-annotation-types-introduced-in-req-26-shapes-rectangle-circle-triangle-arrows-straight-lines-image-overlays-and-background-highlight-regions-each-new-annotation-type-must-be-stored-with-sufficient-data-type-coordinates-color-size-image-data-where-applicable-so-they-can-be-redrawn-accurately-when-annotations-are-loaded-from-the-backend",
+      "title": "Extend the AnnotationCanvas component to support rendering and interaction for the new annotation types introduced in REQ-26: shapes (rectangle, circle, triangle), arrows, straight lines, image overlays, and background highlight regions. Each new annotation type must be stored with sufficient data (type, coordinates, color, size, image data where applicable) so they can be redrawn accurately when annotations are loaded from the backend.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-diagnose-and-fix-the-create-faculty-flow-in-the-admin-panel-faculty-management-section-investigate-the-createfacultymodal-component-the-useaddfaculty-mutation-hook-in-usequeries-ts-and-the-backend-createfaculty-function-to-identify-why-faculty-creation-fails-ensure-the-modal-submits-correctly-the-backend-function-accepts-the-faculty-name-enforces-the-subscription-plan-s-faculty-limit-and-returns-a-success-or-descriptive-error-response-the-faculty-list-must-refresh-automatically-after-a-successful-creation",
+      "title": "Diagnose and fix the 'Create Faculty' flow in the Admin Panel Faculty Management section. Investigate the CreateFacultyModal component, the useAddFaculty mutation hook in useQueries.ts, and the backend createFaculty function to identify why faculty creation fails. Ensure the modal submits correctly, the backend function accepts the faculty name, enforces the subscription plan's faculty limit, and returns a success or descriptive error response. The faculty list must refresh automatically after a successful creation.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-existing-developerportal-page-frontend-src-pages-developerportal-tsx-to-display-a-comprehensive-overview-of-all-system-data-all-faculty-members-name-status-assigned-pdf-count-all-pdfs-title-assigned-faculty-upload-date-taught-untaught-status-all-annotations-per-pdf-page-number-type-timestamp-subscription-plan-details-active-tier-billing-cycle-faculty-count-vs-limit-pdf-count-vs-limit-expiry-date-and-registered-devices-fingerprint-truncated-registration-date-organize-the-data-into-clearly-labeled-tabs-or-sections-for-faculty-pdfs-annotations-subscription-and-devices",
+      "title": "Enhance the existing DeveloperPortal page (frontend/src/pages/DeveloperPortal.tsx) to display a comprehensive overview of all system data: all faculty members (name, status, assigned PDF count), all PDFs (title, assigned faculty, upload date, taught/untaught status), all annotations per PDF (page number, type, timestamp), subscription plan details (active tier, billing cycle, faculty count vs. limit, PDF count vs. limit, expiry date), and registered devices (fingerprint truncated, registration date). Organize the data into clearly labeled tabs or sections for Faculty, PDFs, Annotations, Subscription, and Devices.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-backend-query-functions-to-support-the-developer-portal-s-data-needs-1-a-function-to-retrieve-all-faculty-members-with-their-assigned-pdf-count-2-a-function-to-retrieve-all-annotations-across-all-pdfs-not-filtered-by-faculty-and-3-a-function-to-retrieve-all-devices-registered-under-the-current-license-expose-these-as-callable-actor-methods-and-wire-them-into-the-existing-usequeries-ts-hooks-for-use-by-the-developer-portal-frontend",
+      "title": "Add backend query functions to support the Developer Portal's data needs: (1) a function to retrieve all faculty members with their assigned PDF count, (2) a function to retrieve all annotations across all PDFs (not filtered by faculty), and (3) a function to retrieve all devices registered under the current license. Expose these as callable actor methods and wire them into the existing useQueries.ts hooks for use by the Developer Portal frontend.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-the-frontend-createfacultymodal-component-and-the-useaddfaculty-mutation-hook-in-usequeries-ts-to-ensure-that-any-limit-related-error-returned-from-the-backend-is-only-displayed-when-the-backend-actually-returns-a-limit-error-not-due-to-stale-state-premature-validation-or-incorrect-error-parsing-clear-any-cached-error-state-when-the-modal-is-opened-fresh-and-ensure-the-faculty-list-is-invalidated-and-refetched-after-a-successful-creation-so-the-ui-reflects-the-correct-faculty-count",
+      "title": "Audit and fix the frontend `CreateFacultyModal` component and the `useAddFaculty` mutation hook in `useQueries.ts` to ensure that any limit-related error returned from the backend is only displayed when the backend actually returns a limit error, not due to stale state, premature validation, or incorrect error parsing. Clear any cached error state when the modal is opened fresh, and ensure the faculty list is invalidated and refetched after a successful creation so the UI reflects the correct faculty count.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-the-frontend-createfacultymodal-component-and-the-useaddfaculty-mutation-hook-in-usequeries-ts-to-eliminate-any-remaining-sources-of-false-positive-limit-errors-on-the-frontend-side-1-ensure-that-no-pre-flight-client-side-faculty-count-check-is-performed-before-the-backend-call-all-limit-enforcement-must-come-exclusively-from-the-backend-response-2-ensure-the-modal-s-error-state-is-fully-reset-to-null-empty-every-time-the-modal-is-opened-so-no-stale-error-from-a-previous-open-close-cycle-is-displayed-3-ensure-that-error-parsing-only-shows-a-limit-related-message-when-the-backend-response-text-explicitly-contains-a-limit-exceeded-indicator-not-on-generic-errors-or-network-failures-4-after-a-successful-creation-invalidate-and-refetch-the-faculty-list-query-so-the-displayed-count-is-always-accurate",
+      "title": "Audit the frontend `CreateFacultyModal` component and the `useAddFaculty` mutation hook in `useQueries.ts` to eliminate any remaining sources of false-positive limit errors on the frontend side: (1) ensure that no pre-flight client-side faculty count check is performed before the backend call — all limit enforcement must come exclusively from the backend response; (2) ensure the modal's error state is fully reset to null/empty every time the modal is opened, so no stale error from a previous open/close cycle is displayed; (3) ensure that error parsing only shows a limit-related message when the backend response text explicitly contains a limit-exceeded indicator, not on generic errors or network failures; (4) after a successful creation, invalidate and refetch the faculty list query so the displayed count is always accurate.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-clearly-visible-admin-access-mechanism-to-the-admin-panel-page-since-the-app-does-not-use-internet-identity-for-admin-authentication-implement-a-simple-passcode-based-access-gate-on-the-admin-panel-route-display-a-passcode-entry-screen-before-showing-the-admin-panel-content-hard-code-a-default-admin-passcode-e-g-admin1234-that-is-shown-or-documented-on-the-home-page-or-in-a-visible-location-so-the-user-can-always-access-the-admin-panel-once-entered-correctly-persist-the-authenticated-state-in-sessionstorage-so-the-user-is-not-re-prompted-on-page-refresh-within-the-same-session-include-a-lock-sign-out-button-in-the-admin-panel-header-to-clear-the-session-and-return-to-the-passcode-screen",
+      "title": "Add a clearly visible admin access mechanism to the Admin Panel page. Since the app does not use Internet Identity for admin authentication, implement a simple passcode-based access gate on the Admin Panel route: display a passcode entry screen before showing the Admin Panel content. Hard-code a default admin passcode (e.g., 'admin1234') that is shown or documented on the Home Page or in a visible location so the user can always access the admin panel. Once entered correctly, persist the authenticated state in sessionStorage so the user is not re-prompted on page refresh within the same session. Include a 'Lock / Sign Out' button in the Admin Panel header to clear the session and return to the passcode screen.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-frontend-createfacultymodal-component-and-the-useaddfaculty-mutation-hook-in-usequeries-ts-so-that-the-generic-error-message-failed-to-create-faculty-member-please-try-again-is-only-displayed-when-the-backend-returns-a-genuine-failure-response-ensure-1-the-modal-s-error-state-is-fully-cleared-every-time-the-modal-is-opened-2-on-a-successful-backend-response-the-modal-closes-and-the-faculty-list-is-invalidated-and-refetched-3-the-error-message-displayed-maps-correctly-to-the-backend-s-returned-error-variant-limit-errors-show-a-limit-specific-message-all-other-errors-show-the-generic-failure-message",
+      "title": "Fix the frontend `CreateFacultyModal` component and the `useAddFaculty` mutation hook in `useQueries.ts` so that the generic error message 'Failed to create faculty member. Please try again.' is only displayed when the backend returns a genuine failure response. Ensure: (1) the modal's error state is fully cleared every time the modal is opened; (2) on a successful backend response the modal closes and the faculty list is invalidated and refetched; (3) the error message displayed maps correctly to the backend's returned error variant — limit errors show a limit-specific message, all other errors show the generic failure message.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-createfacultymodal-component-frontend-src-components-createfacultymodal-tsx-and-the-useaddfaculty-mutation-hook-in-frontend-src-hooks-usequeries-ts-so-that-1-the-modal-s-error-state-is-fully-cleared-to-null-every-time-the-modal-is-opened-2-on-a-successful-backend-response-the-modal-closes-immediately-and-the-faculty-list-query-is-invalidated-and-refetched-3-the-error-message-maps-correctly-to-the-backend-s-returned-error-variant-a-limit-error-message-is-shown-only-when-the-backend-explicitly-returns-a-limit-exceeded-indicator-and-the-generic-failed-to-create-faculty-member-please-try-again-message-is-shown-only-for-genuine-backend-failures-4-no-pre-flight-client-side-faculty-count-check-is-performed-before-the-backend-call-all-limit-enforcement-comes-exclusively-from-the-backend-response",
+      "title": "Fix the `CreateFacultyModal` component (`frontend/src/components/CreateFacultyModal.tsx`) and the `useAddFaculty` mutation hook in `frontend/src/hooks/useQueries.ts` so that: (1) the modal's error state is fully cleared to null every time the modal is opened; (2) on a successful backend response the modal closes immediately and the faculty list query is invalidated and refetched; (3) the error message maps correctly to the backend's returned error variant — a limit error message is shown only when the backend explicitly returns a limit-exceeded indicator, and the generic 'Failed to create faculty member. Please try again.' message is shown only for genuine backend failures; (4) no pre-flight client-side faculty count check is performed before the backend call — all limit enforcement comes exclusively from the backend response.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-and-fix-the-adminpasscodegate-component-so-that-the-admin-panel-route-is-always-accessible-via-the-hardcoded-passcode-admin1234-ensure-the-passcode-entry-screen-renders-correctly-on-first-visit-to-the-admin-panel-route-accepts-admin1234-as-the-valid-passcode-persists-the-authenticated-state-in-sessionstorage-so-the-user-is-not-re-prompted-on-page-refresh-within-the-same-session-and-shows-a-lock-sign-out-button-in-the-admin-panel-header-that-clears-the-session-and-returns-to-the-passcode-screen",
+      "title": "Verify and fix the AdminPasscodeGate component so that the Admin Panel route is always accessible via the hardcoded passcode 'admin1234'. Ensure the passcode entry screen renders correctly on first visit to the Admin Panel route, accepts 'admin1234' as the valid passcode, persists the authenticated state in sessionStorage so the user is not re-prompted on page refresh within the same session, and shows a 'Lock / Sign Out' button in the Admin Panel header that clears the session and returns to the passcode screen.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-hardcoded-passcode-check-in-the-adminpasscodegate-component-frontend-src-components-adminpasscodegate-tsx-and-the-admin-panel-route-with-a-proper-username-password-login-form-the-form-must-have-two-fields-a-username-text-input-and-a-password-password-input-on-submission-call-the-backend-verifyadmincredentials-function-if-it-returns-true-persist-the-authenticated-state-in-sessionstorage-and-show-the-admin-panel-if-it-returns-false-display-an-inline-error-message-invalid-username-or-password-do-not-allow-access-until-valid-credentials-are-confirmed-by-the-backend-the-lock-sign-out-button-in-the-admin-panel-header-must-continue-to-clear-the-sessionstorage-session-and-return-the-user-to-the-login-form-on-the-home-page-frontend-src-pages-homepage-tsx-update-the-admin-access-notice-to-display-the-default-credentials-username-admin-password-admin1234-so-users-know-how-to-log-in",
+      "title": "Replace the hardcoded passcode check in the AdminPasscodeGate component (`frontend/src/components/AdminPasscodeGate.tsx`) and the Admin Panel route with a proper username + password login form. The form must have two fields: a 'Username' text input and a 'Password' password input. On submission, call the backend `verifyAdminCredentials` function. If it returns true, persist the authenticated state in sessionStorage and show the Admin Panel. If it returns false, display an inline error message 'Invalid username or password.' Do not allow access until valid credentials are confirmed by the backend. The 'Lock / Sign Out' button in the Admin Panel header must continue to clear the sessionStorage session and return the user to the login form. On the Home Page (`frontend/src/pages/HomePage.tsx`), update the admin access notice to display the default credentials (username: admin, password: admin1234) so users know how to log in.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-change-admin-credentials-section-inside-the-admin-panel-visible-only-after-successful-login-this-section-must-contain-a-form-with-three-fields-new-username-new-password-and-confirm-password-on-submission-validate-that-the-new-username-is-non-empty-the-password-is-at-least-6-characters-and-the-two-password-fields-match-if-valid-call-the-backend-setadmincredentials-function-to-update-the-stored-credentials-and-display-a-success-message-if-validation-fails-display-appropriate-inline-error-messages-clear-the-form-fields-after-a-successful-update",
+      "title": "Add a 'Change Admin Credentials' section inside the Admin Panel (visible only after successful login). This section must contain a form with three fields: 'New Username', 'New Password', and 'Confirm Password'. On submission, validate that the new username is non-empty, the password is at least 6 characters, and the two password fields match. If valid, call the backend `setAdminCredentials` function to update the stored credentials and display a success message. If validation fails, display appropriate inline error messages. Clear the form fields after a successful update.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Admin backend: upload PDFs and assign them to specific faculty members",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Faculty portal: view PDFs assigned to them",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Smart board app: faculty can annotate on PDFs during teaching sessions",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Auto-save annotations on PDFs",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Backend tracking: show whether each PDF has been taught (viewed/used) or not",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Create a backend data model to store PDFs with metadata: title, upload date, assigned faculty IDs, and a 'taught' status flag indicating whether the PDF has been used in a teaching session.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Create a backend data model for faculty members with unique IDs and names, so PDFs can be assigned to specific faculty.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Implement backend functions to upload a PDF (as base64-encoded content), assign it to one or more faculty members, retrieve PDFs assigned to a specific faculty member, and mark a PDF as 'taught'.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Implement backend storage for annotations on PDFs: each annotation record must include the PDF ID, page number, annotation type (highlight, drawing, text note), coordinates/content, and timestamp. Expose functions to save and retrieve annotations per PDF.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Add subscription plan enforcement: restrict access for admins and faculty based on their subscription tier/plan status",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Set up admin panel controls for faculty management (add, edit, remove faculty members and manage their access/settings)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Add a subscription plan data model to the backend with tiers (e.g., Free, Basic, Premium). Each plan defines limits such as maximum number of faculty members allowed and maximum number of PDFs that can be uploaded. Store a current plan assignment for the admin/institution, including plan name, start date, expiry date, and active status.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Enforce subscription plan limits in the backend: block PDF uploads when the plan's PDF limit is reached, block adding new faculty members when the plan's faculty limit is reached, and return descriptive error messages when limits are exceeded.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Extend the backend to support full faculty management: add functions to update a faculty member's name, deactivate/reactivate a faculty member (active status flag), and delete a faculty member. A deactivated faculty member should not appear in the faculty selector on the Faculty Portal.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Update subscription plans: remove Free plan. Add 3 tiers (Basic, Premium, Diamond) each with 4 billing cycles (Monthly, Quarterly, Half-yearly, Yearly). Basic: 30 faculty, 500 PDFs — 8000/25000/50000/100000 INR. Premium: 100 faculty, 2000 PDFs — 16500/50000/100000/200000 INR. Diamond: 500 faculty, 5000 PDFs — 33000/100000/200000/400000 INR.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Update the backend subscription plan data model to remove the Free tier entirely and replace it with three tiers (Basic, Premium, Diamond), each with four billing cycles. Basic: 30 faculty, 500 PDFs — Monthly 8000 INR, Quarterly 25000 INR, Half-yearly 50000 INR, Yearly 100000 INR. Premium: 100 faculty, 2000 PDFs — Monthly 16500 INR, Quarterly 50000 INR, Half-yearly 100000 INR, Yearly 200000 INR. Diamond: 500 faculty, 5000 PDFs — Monthly 33000 INR, Quarterly 100000 INR, Half-yearly 200000 INR, Yearly 400000 INR. Each plan variant must store tier name, billing cycle label, faculty limit, PDF limit, and price in INR. The current plan assignment must reference a tier + billing cycle combination.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Make the app downloadable/installable (e.g., as an Electron desktop app or installable PWA) suitable for smart board devices.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Implement a 10-device license limit per license/login: track all devices that log in under a license or login ID, allow up to 10 devices, and restrict any additional devices (11th and beyond) from logging in with that license or credentials.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Add a device registration data model to the backend. Each license/login ID must track all devices that have logged in under it. Store a unique device fingerprint (derived from browser/system identifiers) and registration timestamp per device entry. The maximum allowed devices per license is 10.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Implement backend enforcement of the 10-device license limit. When a device attempts to authenticate with a license or login ID, check if its fingerprint is already registered. If registered, allow access. If not registered and the device count is below 10, register it and allow access. If not registered and the device count is already 10, reject the login with a clear error message: 'Device limit reached. This license is already in use on 10 devices. Please contact your administrator.'",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Add a backend function that returns all PDFs (regardless of faculty assignment) along with their annotations, to support the developer/admin full-access view. This function should be callable without a faculty ID filter.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Add a 'Create Faculty' option in the Faculty Management section of the Admin Panel to allow admins to add new faculty members.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Expand annotation tools in the PDF Teaching View to include: color picker, shapes (rectangle, circle, etc.), arrows, image insertion, lines, and background/highlight light colors.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Update the backend annotation data model and save/retrieve functions to support the new annotation types: shape (with subtype: rectangle, circle, triangle), arrow, line, imageOverlay (with base64 image content), and backgroundHighlight. The annotation record must accommodate the additional fields needed by these types (e.g., endX, endY, imageData, shapeType, fillColor) while remaining backward-compatible with existing annotation records.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Diagnose and fix the false-positive faculty limit error shown in the Create Faculty modal. The error 'Faculty limit reached for your current plan' is triggered even when zero faculty members exist. Investigate the backend `createFaculty` function's limit check: it must compare the current number of faculty members (not some other counter or uninitialized value) against the active subscription plan's faculty limit. Ensure the count uses the actual length of the faculty members map/list at the time of the call, and that the default/initial plan's faculty limit is correctly set to a non-zero value (e.g., Basic plan = 30 faculty). Fix the comparison so that faculty creation succeeds when the current faculty count is genuinely below the plan limit.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Perform a deep audit of the backend `createFaculty` function in `backend/main.mo` to identify and fix the root cause of the false-positive faculty limit error. Specifically: (1) verify that the faculty count used in the limit check is derived from the actual runtime size of the faculty members stable map/array at the moment of the call — not from a cached counter, an uninitialized variable, or any other indirect value; (2) verify that the default subscription plan (assigned on first run or when no plan has been explicitly selected) has a non-zero faculty limit (e.g., Basic = 30); (3) verify that the limit comparison is strictly `currentCount < planLimit`, not `<=` or any inverted form; (4) add a debug/trace log or comment in the function body showing exactly which values are being compared; (5) if the plan record stored in stable state has a zero or missing faculty limit due to a past migration or initialization bug, fix the initializer and add a migration step to correct the stored value.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Diagnose and fix the 'Failed to create faculty member. Please try again.' error shown in the Create Faculty modal when submitting a valid faculty name (e.g., 'Pradeep'). Perform a deep audit of the backend `createFaculty` function in `backend/main.mo` to identify the root cause: (1) verify that the faculty count used in the limit check is derived from the actual runtime size of the faculty stable map at the moment of the call, not from a cached counter or uninitialized variable; (2) verify that the default subscription plan has a non-zero faculty limit (Basic = 30); (3) verify that the limit comparison is strictly `currentCount < planLimit`; (4) ensure the function returns a clear success or descriptive error variant so the frontend can distinguish between a limit error and a generic failure. Fix all identified issues so that faculty creation succeeds when the current count is below the plan limit.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Perform a full end-to-end audit and fix of the faculty creation flow. In the backend `createFaculty` function in `backend/main.mo`: (1) ensure the faculty count used in the limit check is the real-time size of the faculty stable map at the moment of the call — not a cached counter or an uninitialized variable; (2) ensure the default/initial subscription plan stored in stable state has a non-zero faculty limit (Basic = 30 faculty); (3) ensure the limit comparison is strictly `currentCount < planLimit` and not inverted or off-by-one; (4) ensure the function returns a well-typed success or error variant (e.g., `#ok` / `#err(\"limit_exceeded\")` / `#err(\"unknown\")`) so the frontend can distinguish between limit errors and other failures; (5) if a migration is needed to repair a stored plan record with a zero faculty limit, generate the appropriate migration step.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "On the Home Page (frontend/src/pages/HomePage.tsx), display the admin passcode ('admin1234') in a clearly visible, prominent location — such as a dedicated info card or notice box — so that any user landing on the home page can immediately see the passcode required to access the Admin Panel.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Create a proper admin user ID and password authentication system (instead of or in addition to the hardcoded passcode), allowing admins to log in with a username and password.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Add a backend data model and functions for admin credentials. Store a single admin record containing a username and a hashed (or securely compared) password in stable state. Provide a backend function `setAdminCredentials(username: Text, password: Text) : async Result` to create or update admin credentials, and a function `verifyAdminCredentials(username: Text, password: Text) : async Bool` that returns true when the supplied username and password match the stored credentials. Initialize stable state with a default admin username of 'admin' and password 'admin1234' so the system is accessible on first deploy.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "SmartBoard Faculty PDF Portal",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

@@ -1,0 +1,45 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-replace-the-hardcoded-passcode-check-in-the-adminpasscodegate-component-frontend-src-components-adminpasscodegate-tsx-and-the-admin-panel-route-with-a-proper-username-password-login-form-the-form-must-have-two-fields-a-username-text-input-and-a-password-password-input-on-submission-call-the-backend-verifyadmincredentials-function-if-it-returns-true-persist-the-authenticated-state-in-sessionstorage-and-show-the-admin-panel-if-it-returns-false-display-an-inline-error-message-invalid-username-or-password-do-not-allow-access-until-valid-credentials-are-confirmed-by-the-backend-the-lock-sign-out-button-in-the-admin-panel-header-must-continue-to-clear-the-sessionstorage-session-and-return-the-user-to-the-login-form-on-the-home-page-frontend-src-pages-homepage-tsx-update-the-admin-access-notice-to-display-the-default-credentials-username-admin-password-admin1234-so-users-know-how-to-log-in",
+      "featureTitle": "Replace the hardcoded passcode check in the AdminPasscodeGate component (`frontend/src/components/AdminPasscodeGate.tsx`) and the Admin Panel route with a proper username + password login form. The form must have two fields: a 'Username' text input and a 'Password' password input. On submission, call the backend `verifyAdminCredentials` function. If it returns true, persist the authenticated state in sessionStorage and show the Admin Panel. If it returns false, display an inline error message 'Invalid username or password.' Do not allow access until valid credentials are confirmed by the backend. The 'Lock / Sign Out' button in the Admin Panel header must continue to clear the sessionStorage session and return the user to the login form. On the Home Page (`frontend/src/pages/HomePage.tsx`), update the admin access notice to display the default credentials (username: admin, password: admin1234) so users know how to log in.",
+      "files": [
+        "frontend/src/components/AdminPasscodeGate.tsx",
+        "frontend/src/pages/HomePage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-44"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-change-admin-credentials-section-inside-the-admin-panel-visible-only-after-successful-login-this-section-must-contain-a-form-with-three-fields-new-username-new-password-and-confirm-password-on-submission-validate-that-the-new-username-is-non-empty-the-password-is-at-least-6-characters-and-the-two-password-fields-match-if-valid-call-the-backend-setadmincredentials-function-to-update-the-stored-credentials-and-display-a-success-message-if-validation-fails-display-appropriate-inline-error-messages-clear-the-form-fields-after-a-successful-update",
+      "featureTitle": "Add a 'Change Admin Credentials' section inside the Admin Panel (visible only after successful login). This section must contain a form with three fields: 'New Username', 'New Password', and 'Confirm Password'. On submission, validate that the new username is non-empty, the password is at least 6 characters, and the two password fields match. If valid, call the backend `setAdminCredentials` function to update the stored credentials and display a success message. If validation fails, display appropriate inline error messages. Clear the form fields after a successful update.",
+      "files": [
+        "frontend/src/components/ChangeAdminCredentialsForm.tsx",
+        "frontend/src/pages/AdminPanel.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-45"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

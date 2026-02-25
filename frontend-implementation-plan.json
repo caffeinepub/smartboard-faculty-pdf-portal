@@ -1,0 +1,55 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Admin User ID & Password Authentication System - Frontend",
+  "requirements": [
+    {
+      "id": "REQ-44",
+      "summary": "Replace hardcoded passcode with username/password login form that verifies credentials via backend",
+      "acceptanceCriteria": [
+        "The Admin Panel route shows a username + password login form before granting access.",
+        "Submitting correct credentials (verified by backend) grants access and persists the session in sessionStorage.",
+        "Submitting incorrect credentials shows 'Invalid username or password.' inline without granting access.",
+        "The 'Lock / Sign Out' button clears the sessionStorage session and returns to the login form.",
+        "The Home Page displays the default admin credentials (username: admin, password: admin1234) in a clearly visible location.",
+        "On page refresh within the same session, the user is not re-prompted for credentials."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AdminPasscodeGate.tsx",
+          "operation": "modify",
+          "description": "Replace the single passcode input with a two-field login form containing 'Username' text input and 'Password' password input. On form submission, call the backend verifyAdminCredentials function with the entered username and password. If the backend returns true, persist the authenticated state in sessionStorage using the existing session key and render children. If false, display an inline error message 'Invalid username or password.' below the form. Retain the existing LOCK_EVENT listener and sessionStorage session management logic. Ensure the component continues to check sessionStorage on mount to preserve sessions across page refreshes."
+        },
+        {
+          "path": "frontend/src/pages/HomePage.tsx",
+          "operation": "modify",
+          "description": "Add a visible notice displaying the default admin credentials near the admin access section. The notice should clearly state: 'Default admin login - Username: admin, Password: admin1234'. Style the notice to be easily readable and positioned near the Admin Panel navigation button so users know how to access the admin interface on first use."
+        }
+      ]
+    },
+    {
+      "id": "REQ-45",
+      "summary": "Add Change Admin Credentials section in Admin Panel with form to update username and password via backend",
+      "acceptanceCriteria": [
+        "A 'Change Admin Credentials' form is present and visible within the Admin Panel after login.",
+        "The form contains New Username, New Password, and Confirm Password fields.",
+        "Submitting with a non-empty username, password of at least 6 characters, and matching password fields calls setAdminCredentials on the backend.",
+        "A success message is displayed after credentials are updated successfully.",
+        "Inline validation errors are shown for empty username, password too short, or mismatched passwords.",
+        "Form fields are cleared after a successful update."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ChangeAdminCredentialsForm.tsx",
+          "operation": "create",
+          "description": "Create a new form component for changing admin credentials. The form must include three controlled input fields: 'New Username' (text input), 'New Password' (password input), and 'Confirm Password' (password input). Implement client-side validation: ensure new username is non-empty, new password is at least 6 characters, and both password fields match. Display inline error messages for validation failures. On successful validation, call the backend setAdminCredentials function with the new username and password. If the backend call succeeds, display a success message and clear all form fields. If the backend call fails, display the error message inline. Use React state to manage form values, validation errors, loading state, and success/error messages."
+        },
+        {
+          "path": "frontend/src/pages/AdminPanel.tsx",
+          "operation": "modify",
+          "description": "Import and render the ChangeAdminCredentialsForm component within the Admin Panel page. Position the component in a dedicated section below the existing subscription and management sections. Add a heading 'Change Admin Credentials' above the form. Ensure the form is only visible after the user has successfully authenticated through the AdminPasscodeGate. The form should be styled consistently with the rest of the admin interface using the existing card/section design patterns."
+        }
+      ]
+    }
+  ]
+}

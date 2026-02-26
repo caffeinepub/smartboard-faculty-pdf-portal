@@ -8,42 +8,44 @@
   :root {
     --radius: 0.5rem;
 
-    /* Academic warm palette - light mode */
-    --background: 0.97 0.008 85;
-    --foreground: 0.18 0.025 255;
+    /* Maroon-themed palette - light mode */
+    /* Background: warm off-white with a faint maroon tint */
+    --background: 0.97 0.01 15;
+    --foreground: 0.15 0.03 15;
 
-    --card: 0.99 0.004 85;
-    --card-foreground: 0.18 0.025 255;
+    /* Cards: clean white with subtle warmth */
+    --card: 0.99 0.005 15;
+    --card-foreground: 0.15 0.03 15;
 
-    --popover: 0.99 0.004 85;
-    --popover-foreground: 0.18 0.025 255;
+    --popover: 0.99 0.005 15;
+    --popover-foreground: 0.15 0.03 15;
 
-    /* Deep navy primary */
-    --primary: 0.28 0.08 255;
-    --primary-foreground: 0.98 0.004 85;
+    /* Rich maroon primary — oklch approx for #7B0000 */
+    --primary: 0.32 0.14 20;
+    --primary-foreground: 0.97 0.005 15;
 
-    /* Warm amber accent */
-    --accent: 0.75 0.16 75;
-    --accent-foreground: 0.18 0.025 255;
+    /* Gold/amber accent — pairs well with maroon */
+    --accent: 0.72 0.16 68;
+    --accent-foreground: 0.15 0.03 15;
 
-    --secondary: 0.93 0.012 85;
-    --secondary-foreground: 0.28 0.08 255;
+    --secondary: 0.93 0.015 15;
+    --secondary-foreground: 0.32 0.14 20;
 
-    --muted: 0.93 0.012 85;
-    --muted-foreground: 0.52 0.03 255;
+    --muted: 0.93 0.015 15;
+    --muted-foreground: 0.50 0.03 15;
 
     --destructive: 0.577 0.245 27.325;
     --destructive-foreground: 0.985 0 0;
 
-    --border: 0.88 0.015 85;
-    --input: 0.88 0.015 85;
-    --ring: 0.55 0.08 255;
+    --border: 0.88 0.018 15;
+    --input: 0.88 0.018 15;
+    --ring: 0.42 0.10 20;
 
     --success: 0.65 0.15 145;
     --success-foreground: 0.98 0.004 85;
 
     --warning: 0.75 0.16 75;
-    --warning-foreground: 0.18 0.025 255;
+    --warning-foreground: 0.15 0.03 15;
 
     --chart-1: 0.646 0.222 41.116;
     --chart-2: 0.6 0.118 184.704;
@@ -51,59 +53,62 @@
     --chart-4: 0.828 0.189 84.429;
     --chart-5: 0.769 0.188 70.08;
 
-    --sidebar: 0.99 0.004 85;
-    --sidebar-foreground: 0.18 0.025 255;
-    --sidebar-primary: 0.28 0.08 255;
-    --sidebar-primary-foreground: 0.98 0.004 85;
-    --sidebar-accent: 0.93 0.012 85;
-    --sidebar-accent-foreground: 0.28 0.08 255;
-    --sidebar-border: 0.88 0.015 85;
-    --sidebar-ring: 0.55 0.08 255;
+    --sidebar: 0.99 0.005 15;
+    --sidebar-foreground: 0.15 0.03 15;
+    --sidebar-primary: 0.32 0.14 20;
+    --sidebar-primary-foreground: 0.97 0.005 15;
+    --sidebar-accent: 0.93 0.015 15;
+    --sidebar-accent-foreground: 0.32 0.14 20;
+    --sidebar-border: 0.88 0.018 15;
+    --sidebar-ring: 0.42 0.10 20;
   }
 
   .dark {
-    --background: 0.14 0.03 255;
-    --foreground: 0.95 0.008 85;
+    /* Dark mode: deep maroon-tinged dark backgrounds */
+    --background: 0.13 0.04 20;
+    --foreground: 0.95 0.008 15;
 
-    --card: 0.18 0.04 255;
-    --card-foreground: 0.95 0.008 85;
+    --card: 0.18 0.05 20;
+    --card-foreground: 0.95 0.008 15;
 
-    --popover: 0.22 0.04 255;
-    --popover-foreground: 0.95 0.008 85;
+    --popover: 0.22 0.05 20;
+    --popover-foreground: 0.95 0.008 15;
 
-    --primary: 0.75 0.16 75;
-    --primary-foreground: 0.14 0.03 255;
+    /* Lighter maroon for dark mode primary */
+    --primary: 0.52 0.18 20;
+    --primary-foreground: 0.97 0.005 15;
 
-    --accent: 0.75 0.16 75;
-    --accent-foreground: 0.14 0.03 255;
+    /* Gold accent remains warm */
+    --accent: 0.72 0.16 68;
+    --accent-foreground: 0.13 0.04 20;
 
-    --secondary: 0.22 0.04 255;
-    --secondary-foreground: 0.95 0.008 85;
+    --secondary: 0.22 0.05 20;
+    --secondary-foreground: 0.95 0.008 15;
 
-    --muted: 0.22 0.04 255;
-    --muted-foreground: 0.65 0.03 255;
+    --muted: 0.22 0.05 20;
+    --muted-foreground: 0.62 0.03 15;
 
     --destructive: 0.704 0.191 22.216;
     --destructive-foreground: 0.205 0 0;
 
     --border: 1 0 0 / 12%;
     --input: 1 0 0 / 15%;
-    --ring: 0.65 0.12 75;
+    --ring: 0.52 0.14 20;
 
     --success: 0.65 0.15 145;
-    --success-foreground: 0.14 0.03 255;
+    --success-foreground: 0.13 0.04 20;
 
     --warning: 0.75 0.16 75;
-    --warning-foreground: 0.14 0.03 255;
+    --warning-foreground: 0.13 0.04 20;
 
-    --sidebar: 0.18 0.04 255;
-    --sidebar-foreground: 0.95 0.008 85;
-    --sidebar-primary: 0.75 0.16 75;
-    --sidebar-primary-foreground: 0.14 0.03 255;
-    --sidebar-accent: 0.22 0.04 255;
-    --sidebar-accent-foreground: 0.95 0.008 85;
+    --sidebar: 0.18 0.05 20;
+    --sidebar-foreground: 0.95 0.008 15;
+    --sidebar-primary: 0.52 0.18 20;
+    --sidebar-primary-foreground: 0.97 0.005 15;
+    --sidebar-accent: 0.22 0.05 20;
+    --sidebar-accent-foreground: 0.95 0.008 15;
     --sidebar-border: 1 0 0 / 12%;
-    --sidebar-ring: 0.65 0.12 75;
+    --sidebar-ring: 0.52 0.14 20;
   }
 
   * {

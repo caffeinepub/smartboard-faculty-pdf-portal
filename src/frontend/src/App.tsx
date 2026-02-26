@@ -14,6 +14,7 @@ import TeachingView from '@/pages/TeachingView';
 import DeveloperPortal from '@/pages/DeveloperPortal';
 import DeviceLimitBlocker from '@/components/DeviceLimitBlocker';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { FacultyProvider } from '@/context/FacultyContext';
 import { useDeviceRegistration } from '@/hooks/useDeviceRegistration';
 import { Loader2 } from 'lucide-react';
@@ -41,8 +42,8 @@ function DeviceGate() {
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background gap-4">
         <div className="flex items-center gap-3">
           <img
-            src="/assets/generated/eduboard-logo.dim_256x256.png"
-            alt="EduBoard"
+            src="/assets/uploads/image-5-1.png"
+            alt="RS Logo"
             className="h-12 w-12 rounded-xl object-contain"
             onError={(e) => {
               // Hide broken image gracefully
@@ -136,6 +137,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <RouterProvider router={router} />
+      <PWAInstallPrompt />
     </ErrorBoundary>
   );
 }

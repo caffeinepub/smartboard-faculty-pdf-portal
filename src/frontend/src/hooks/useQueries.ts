@@ -196,18 +196,23 @@ export interface LocalAnnotation {
 
 const ADMIN_CREDS_KEY = 'eduboard_admin_creds';
 
-function getAdminCredentials(): { username: string; password: string } {
+function getAdminCredentials(): { username: string; password: string } | null {
   try {
     const raw = localStorage.getItem(ADMIN_CREDS_KEY);
     if (raw) return JSON.parse(raw);
   } catch {
     // ignore
   }
-  return { username: 'admin', password: 'admin1234' };
+  return null;
+}
+
+export function hasAdminCredentialsSet(): boolean {
+  return getAdminCredentials() !== null;
 }
 
 export function verifyAdminCredentials(username: string, password: string): boolean {
   const creds = getAdminCredentials();
+  if (!creds) return false;
   return creds.username === username && creds.password === password;
 }
 

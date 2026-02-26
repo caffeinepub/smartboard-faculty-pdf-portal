@@ -1,6 +1,6 @@
 {
-  "name": "EduBoard Smart Faculty Portal",
-  "short_name": "EduBoard",
+  "name": "SmartBoard Faculty PDF Portal",
+  "short_name": "SmartBoard",
   "description": "Smart Faculty PDF Portal for smart boards — manage teaching materials, annotations, and faculty assignments.",
   "start_url": "/",
   "display": "standalone",

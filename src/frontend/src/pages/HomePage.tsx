@@ -1,9 +1,8 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { LayoutDashboard, GraduationCap, BookOpen, CheckCircle2, Pen, Users, KeyRound, User, Lock } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, BookOpen, CheckCircle2, Pen, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -36,15 +35,15 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="bg-primary text-primary-foreground py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary-foreground/10 mb-4">
+          <div className="flex items-center justify-center mb-4">
             <img
-              src="/assets/generated/eduboard-logo.dim_256x256.png"
-              alt="EduBoard"
-              className="h-14 w-14 object-contain"
+              src="/assets/uploads/image-5-1.png"
+              alt="RS Logo"
+              className="h-28 w-28 object-contain rounded-2xl shadow-lg bg-white p-2"
             />
           </div>
           <h1 className="font-display text-5xl font-bold leading-tight">
-            Smart Board Faculty Portal
+            Smart Board Portal
           </h1>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed">
             A powerful teaching platform for smart boards. Upload PDFs, annotate during lessons,
@@ -72,41 +71,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Admin Login Credentials Notice */}
-      <section className="py-8 px-4 bg-accent/5 border-b border-border">
-        <div className="container mx-auto max-w-2xl">
-          <Alert className="border-accent/40 bg-accent/10">
-            <KeyRound className="h-5 w-5 text-accent" />
-            <AlertTitle className="font-semibold text-foreground text-base">
-              Default Admin Login Credentials
-            </AlertTitle>
-            <AlertDescription className="mt-2 space-y-3">
-              <p className="text-muted-foreground text-sm">
-                Use the credentials below to access the Admin Panel for the first time. You can change them after logging in.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 mt-2">
-                <div className="flex items-center gap-2 bg-background border border-border rounded-md px-3 py-2 flex-1">
-                  <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground font-medium">Username:</span>
-                  <code className="font-mono text-sm font-bold text-accent select-all">
-                    admin
-                  </code>
-                </div>
-                <div className="flex items-center gap-2 bg-background border border-border rounded-md px-3 py-2 flex-1">
-                  <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground font-medium">Password:</span>
-                  <code className="font-mono text-sm font-bold text-accent select-all">
-                    admin1234
-                  </code>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground italic">
-                ⚠️ Change these credentials after your first login for security.
-              </p>
-            </AlertDescription>
-          </Alert>
-        </div>
-      </section>
 
       {/* Features Section */}
       <section className="py-16 px-4">

@@ -29,6 +29,38 @@ export type AnnotationDeleteResult = { 'error' : string } |
   { 'success' : null };
 export type AnnotationUpdateResult = { 'error' : string } |
   { 'success' : null };
+export type BillingCycle = { 'quarterly' : null } |
+  { 'monthly' : null } |
+  { 'halfYearly' : null } |
+  { 'yearly' : null };
+export interface PdfMetadata {
+  'id' : bigint,
+  'title' : string,
+  'contentBase64' : string,
+  'assignedFaculty' : Array<string>,
+  'isTaught' : boolean,
+}
+export type PlanTier = { 'premium' : null } |
+  { 'diamond' : null } |
+  { 'basic' : null };
+export type PriceList = Array<
+  {
+    'maxFaculty' : bigint,
+    'tier' : PlanTier,
+    'cycle' : BillingCycle,
+    'maxPdfLimit' : bigint,
+    'maxLicenses' : bigint,
+    'priceInr' : bigint,
+  }
+>;
+export interface SubscriptionPlan {
+  'maxFaculty' : bigint,
+  'tier' : PlanTier,
+  'cycle' : BillingCycle,
+  'maxPdfLimit' : bigint,
+  'maxLicenses' : bigint,
+  'priceInr' : bigint,
+}
 export type SyncResult = { 'error' : string } |
   { 'success' : SyncState };
 export interface SyncState {
@@ -42,13 +74,23 @@ export type UserRole = { 'admin' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addAnnotation' : ActorMethod<[Annotation], AnnotationCreateResult>,
+  'addPdf' : ActorMethod<[PdfMetadata], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deleteAnnotation' : ActorMethod<[bigint], AnnotationDeleteResult>,
+  'getActiveSubscriptionPlan' : ActorMethod<[], SubscriptionPlan>,
+  'getAvailablePriceList' : ActorMethod<[], PriceList>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCurrentSubscriptionLimits' : ActorMethod<
+    [],
+    { 'maxFaculty' : bigint, 'maxPdfLimit' : bigint, 'maxLicenses' : bigint }
+  >,
+  'getPdfById' : ActorMethod<[bigint], [] | [PdfMetadata]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'markPdfAsTaught' : ActorMethod<[bigint], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setSubscriptionPlan' : ActorMethod<[SubscriptionPlan], undefined>,
   'syncAnnotations' : ActorMethod<[], SyncResult>,
   'updateAnnotation' : ActorMethod<[Annotation], AnnotationUpdateResult>,
 }

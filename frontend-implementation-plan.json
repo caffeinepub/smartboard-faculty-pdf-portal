@@ -1,52 +1,31 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix PDF-to-faculty assignment in Admin Panel",
+  "title": "Update subscription plan pricing, limits, and license counts",
   "requirements": [
     {
-      "id": "REQ-51",
-      "summary": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members",
+      "id": "REQ-57",
+      "summary": "Update frontend subscription plan configuration to reflect new pricing, limits, and license counts for all three tiers (Basic, Premium, Diamond) across all four billing cycles, and display license counts on plan cards",
       "acceptanceCriteria": [
-        "The PDF upload form in the Admin Panel displays a populated list of active faculty members to assign to.",
-        "Selecting one or more faculty members and submitting the form successfully calls the backend uploadPDF function with the selected faculty IDs.",
-        "No admin credential prompt or authorization error appears when the user is already authenticated via AdminPasscodeGate.",
-        "The backend uploadPDF function persists the faculty assignment without requiring any additional credential token from the frontend.",
-        "After a successful upload, the PDF list table refreshes and shows the new PDF with the correct assigned faculty names.",
-        "If the PDF upload or faculty assignment fails, a descriptive error message is shown inline in the form."
+        "SubscriptionSection displays three plan cards: Basic, Premium, Diamond — no Free plan card",
+        "Each card shows the correct faculty limit, PDF limit, license count, and per-cycle price",
+        "Basic card shows: 30 Faculty, 500 PDFs, 2 Licenses, with prices 8000/25000/50000/100000 INR per cycle",
+        "Premium card shows: 100 Faculty, 2000 PDFs, 4 Licenses, with prices 16500/50000/100000/200000 INR per cycle",
+        "Diamond card shows: 500 Faculty, 5000 PDFs, 6 Licenses, with prices 33000/100000/200000/400000 INR per cycle",
+        "Billing cycle selector on each card updates the displayed price correctly",
+        "Selecting a plan passes the correct tier and billing cycle to the backend updatePlan call",
+        "The plan tier configuration in useQueries.ts matches these exact values"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/PDFUploadForm.tsx",
-          "operation": "modify",
-          "description": "Update the PDFUploadForm component to fetch and display active faculty members in a multi-select field on mount. Ensure the faculty selector correctly populates from the backend query. Add validation to require at least one faculty member to be selected before submission. Update the form submission handler to collect selected faculty IDs and pass them to the useUploadPDF mutation without any additional admin credential argument. Display backend error messages (e.g., PDF limit exceeded) inline within the form. Remove any pre-flight admin credential re-check that might short-circuit the submission before contacting the backend."
-        },
-        {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update the useUploadPDF mutation hook to accept title, base64Content, and selectedFacultyIds parameters. Ensure the mutation calls actor.uploadPDF(title, base64Content, selectedFacultyIds) without passing any additional admin token or credential argument. On successful upload, invalidate the PDF list query (['pdfs']) to trigger an immediate refetch so the table displays the newly assigned PDF. Ensure error responses from the backend are properly returned to the form for inline display."
-        }
-      ]
-    },
-    {
-      "id": "REQ-53",
-      "summary": "Update the PDFUploadForm component so that the faculty multi-select field fetches and renders active faculty members, allows selecting one or more faculty members, and calls the backend without any additional admin credential",
-      "acceptanceCriteria": [
-        "The faculty selector in PDFUploadForm shows all active faculty members fetched from the backend.",
-        "At least one faculty member must be selected before the form allows submission.",
-        "The mutation calls actor.uploadPDF with title, base64 content, and the array of selected faculty IDs — no admin token argument.",
-        "On successful submission, the PDF list table is automatically refreshed.",
-        "Error messages from the backend (e.g., PDF limit reached) are displayed inline without crashing the form."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/PDFUploadForm.tsx",
-          "operation": "modify",
-          "description": "Refactor the PDFUploadForm component to include a faculty multi-select field that fetches the list of active faculty members from the backend on component mount using the useFaculty query. Render each active faculty member as a selectable option with their name displayed. Implement form state to track the array of selected faculty IDs. Add validation logic to ensure at least one faculty member is selected before enabling form submission. Update the form submit handler to pass the title, base64 PDF content, and selectedFacultyIds array to the useUploadPDF mutation. Display any error returned by the mutation inline within the form (e.g., using an error message element below the submit button). Ensure no admin credential re-check occurs within the form before calling the mutation."
+          "description": "Update the PLAN_TIERS constant object to reflect the new pricing structure, limits, and license counts. Set Basic tier to facultyLimit=30, pdfLimit=500, licenseCount=2 with prices monthly=8000, quarterly=25000, halfYearly=50000, yearly=100000. Set Premium tier to facultyLimit=100, pdfLimit=2000, licenseCount=4 with prices monthly=16500, quarterly=50000, halfYearly=100000, yearly=200000. Set Diamond tier to facultyLimit=500, pdfLimit=5000, licenseCount=6 with prices monthly=33000, quarterly=100000, halfYearly=200000, yearly=400000. Remove any Free tier if present. Ensure the PlanTier type and all related interfaces include the licenseCount field."
         },
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/components/SubscriptionSection.tsx",
           "operation": "modify",
-          "description": "Modify the useUploadPDF mutation to accept three parameters: title (string), base64Content (string), and selectedFacultyIds (array of bigint or number). Update the mutationFn to call actor.uploadPDF(title, base64Content, selectedFacultyIds) without passing any admin token or additional credential argument. Configure the mutation's onSuccess callback to invalidate the ['pdfs'] query key using queryClient.invalidateQueries so the PDF list table automatically refetches and displays the newly uploaded PDF with its assigned faculty. Ensure the mutation properly handles and returns backend error responses (such as PDF limit exceeded) so they can be displayed inline in the form."
+          "description": "Update the component to display the license count for each plan card alongside the faculty limit and PDF limit. Ensure each plan card shows '2 Licenses' for Basic, '4 Licenses' for Premium, and '6 Licenses' for Diamond. Verify that the billing cycle selector correctly updates the displayed price for all four cycles (Monthly, Quarterly, Half-yearly, Yearly) using the updated PLAN_TIERS data from useQueries.ts. Ensure only three plan cards (Basic, Premium, Diamond) are rendered and that no Free plan card appears. Confirm that the plan selection logic passes the correct tier and billing cycle to the backend setSubscriptionPlan call."
         }
       ]
     }

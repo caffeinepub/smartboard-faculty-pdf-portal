@@ -1,68 +1,32 @@
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
-import Nat "mo:core/Nat";
-import Text "mo:core/Text";
+import AccessControl "authorization/access-control";
 
 module {
-  type OldFaculty = {
-    id : Nat;
-    name : Text;
-    active : Bool;
-  };
-
-  type OldPDF = {
-    id : Nat;
-    title : Text;
-    uploadDate : Int;
-    facultyIds : [Nat];
-    taught : Bool;
-    content : Text;
-  };
-
-  type OldAnnotation = {
-    pdfId : Nat;
-    pageNumber : Nat;
-    annotationType : Text;
-    coordinates : Text;
-    timestamp : Int;
-    endX : ?Float;
-    endY : ?Float;
-    imageData : ?Text;
-    shapeType : ?Text;
-    fillColor : ?Text;
-  };
-
-  type OldAdminCredentials = {
-    username : Text;
-    password : Text;
-  };
-
-  type OldUserProfile = {
-    name : Text;
-  };
-
   type OldActor = {
-    var userProfiles : Map.Map<Principal, OldUserProfile>;
-    var faculty : Map.Map<Nat, OldFaculty>;
-    var pdfs : Map.Map<Nat, OldPDF>;
-    var annotations : Map.Map<Nat, OldAnnotation>;
-    var nextFacultyId : Nat;
-    var nextPdfId : Nat;
-    var nextAnnotationId : Nat;
-    var adminCredentials : OldAdminCredentials;
-  };
-
-  type NewUserProfile = {
-    name : Text;
+    currentUserProfiles : Map.Map<Principal, { name : Text }>;
+    accessControlState : AccessControl.AccessControlState;
+    pdfs : Map.Map<Nat, { id : Nat; title : Text; contentBase64 : Text; assignedFaculty : [Text]; isTaught : Bool }>;
   };
 
   type NewActor = {
-    var currentUserProfiles : Map.Map<Principal, NewUserProfile>;
+    currentUserProfiles : Map.Map<Principal, { name : Text }>;
+    accessControlState : AccessControl.AccessControlState;
+    pdfs : Map.Map<Nat, { id : Nat; title : Text; contentBase64 : Text; assignedFaculty : [Text]; isTaught : Bool }>;
+    currentPlan : ?{
+      tier : { #basic; #premium; #diamond };
+      cycle : { #monthly; #quarterly; #halfYearly; #yearly };
+      maxFaculty : Nat;
+      maxPdfLimit : Nat;
+      maxLicenses : Nat;
+      priceInr : Nat;
+    };
   };
 
-  public func run(_old : OldActor) : NewActor {
+  public func run(old : OldActor) : NewActor {
     {
-      var currentUserProfiles = Map.empty<Principal, NewUserProfile>();
+      old with
+      currentPlan = null;
     };
   };
 };

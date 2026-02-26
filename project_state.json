@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 45,
+  "projectStateVersion": 49,
   "summary": "A smart board app for college use where admins upload PDFs in the backend, assign them to specific faculty, faculty can view and annotate PDFs during teaching sessions with auto-save, and the backend shows whether each PDF has been taught or not. The app should be downloadable/installable, and each license should be limited to 10 devices — additional devices attempting to log in beyond the 10-device limit should be restricted.",
   "architectural_notes": [
     "Role-based access: Admin (backend) and Faculty (portal/smart board)",
@@ -14,9 +14,10 @@
     "Unable to create faculty from the Admin Panel (Faculty Management section)",
     "Faculty limit incorrectly shows as reached even when no faculty members have been created (false positive limit enforcement)",
     "After successfully logging into the Admin Panel, users are still prompted for admin access again when attempting to perform actions inside the panel (double-authentication issue)",
-    "Unable to assign PDF to a faculty member in the Admin Panel"
+    "Unable to assign PDF to a faculty member in the Admin Panel",
+    "PDF viewer not displaying/rendering PDFs when a faculty member attempts to view an assigned PDF"
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-build-an-admin-panel-frontend-page-where-administrators-can-upload-pdf-files-and-assign-them-to-specific-faculty-members-view-all-uploaded-pdfs-in-a-table-showing-title-assigned-faculty-upload-date-and-taught-untaught-status",
@@ -281,6 +282,22 @@
         "REQ-53"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-diagnose-and-fix-the-pdf-viewer-in-the-teaching-view-frontend-src-pages-teachingview-tsx-so-that-pdfs-assigned-to-faculty-members-render-correctly-when-opened-investigate-why-the-pdf-content-is-not-displaying-likely-causes-include-1-the-base64-pdf-data-not-being-fetched-or-decoded-correctly-from-the-backend-2-the-pdf-js-or-equivalent-renderer-not-being-initialised-with-a-valid-data-url-or-arraybuffer-3-the-canvas-or-container-element-not-mounting-before-the-render-call-4-the-pdf-id-or-route-parameter-not-being-resolved-correctly-from-the-url-causing-an-empty-or-failed-fetch-fix-all-identified-issues-so-the-pdf-pages-render-visibly-when-a-faculty-member-selects-a-pdf-from-their-list",
+      "title": "Diagnose and fix the PDF viewer in the Teaching View (`frontend/src/pages/TeachingView.tsx`) so that PDFs assigned to faculty members render correctly when opened. Investigate why the PDF content is not displaying — likely causes include: (1) the base64 PDF data not being fetched or decoded correctly from the backend; (2) the PDF.js (or equivalent) renderer not being initialised with a valid data URL or ArrayBuffer; (3) the canvas or container element not mounting before the render call; (4) the PDF ID or route parameter not being resolved correctly from the URL, causing an empty or failed fetch. Fix all identified issues so the PDF pages render visibly when a faculty member selects a PDF from their list.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-plan-tier-configuration-object-in-frontend-src-hooks-usequeries-ts-and-any-other-frontend-location-where-plan-data-is-hardcoded-such-as-frontend-src-components-subscriptionsection-tsx-to-match-the-updated-pricing-limits-and-license-counts-exactly-basic-30-faculty-500-pdfs-2-licenses-premium-100-faculty-2000-pdfs-4-licenses-diamond-500-faculty-5000-pdfs-6-licenses-with-all-four-billing-cycle-prices-as-specified-each-plan-card-in-the-subscription-management-section-must-display-the-license-count-e-g-2-licenses-alongside-the-faculty-limit-pdf-limit-and-price",
+      "title": "Update the plan tier configuration object in `frontend/src/hooks/useQueries.ts` (and any other frontend location where plan data is hardcoded, such as `frontend/src/components/SubscriptionSection.tsx`) to match the updated pricing, limits, and license counts exactly: Basic (30 faculty, 500 PDFs, 2 licenses), Premium (100 faculty, 2000 PDFs, 4 licenses), Diamond (500 faculty, 5000 PDFs, 6 licenses), with all four billing cycle prices as specified. Each plan card in the Subscription Management section must display the license count (e.g., '2 Licenses') alongside the faculty limit, PDF limit, and price.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -525,6 +542,28 @@
       "summary": "Audit the backend `uploadPDF` function in `backend/main.mo` to ensure it does not enforce any caller-identity or admin-only access control check that would reject the call when invoked from the already-authenticated Admin Panel session. The function must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant. Remove or disable any `assert`, `isAdmin` check, or caller-principal guard that causes it to return an authorization error.",
       "reqIds": [
         "REQ-52"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Audit the backend `getPDFById` (or equivalent PDF retrieval) function in `backend/main.mo` to ensure it returns the full base64 PDF content and all associated metadata (title, assigned faculty IDs, taught status) when queried by PDF ID. Verify the function is not gated behind an admin-only caller check that would reject calls from the Faculty Portal session. If the function is missing or returning an incomplete record, implement or fix it so the frontend Teaching View can retrieve the complete PDF payload needed to render the document.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "Update subscription plans to include license counts per tier: Basic = 2 licenses, Premium = 4 licenses, Diamond = 6 licenses. Display license count on plan cards in the Subscription Management section.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-45",
+      "summary": "Update the backend subscription plan data model in `backend/main.mo` to reflect the following exact pricing and limits for all three tiers and four billing cycles. Basic: 30 faculty, 500 PDFs, 2 licenses — Monthly ₹8,000, Quarterly ₹25,000, Half-yearly ₹50,000, Yearly ₹1,00,000. Premium: 100 faculty, 2000 PDFs, 4 licenses — Monthly ₹16,500, Quarterly ₹50,000, Half-yearly ₹1,00,000, Yearly ₹2,00,000. Diamond: 500 faculty, 5000 PDFs, 6 licenses — Monthly ₹33,000, Quarterly ₹1,00,000, Half-yearly ₹2,00,000, Yearly ₹4,00,000. Each plan variant must store: tier name, billing cycle label, faculty limit, PDF limit, license count, and price in INR. Ensure the default plan (used on first deploy or when no plan has been explicitly selected) is set to Basic Monthly with its correct limits.",
+      "reqIds": [
+        "REQ-56"
       ],
       "status": "pending"
     }

@@ -1,15 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the PDF-to-faculty assignment flow in the EduBoard Admin Panel so admins can successfully upload a PDF and assign it to one or more faculty members.
+**Goal:** Update subscription plan pricing, limits, and license counts across backend and frontend for all three tiers (Basic, Premium, Diamond) and four billing cycles.
 
 **Planned changes:**
-- Audit and fix `PDFUploadForm` to correctly fetch and display the list of active faculty members from the backend on mount.
-- Ensure selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call without any extra admin credential argument.
-- Remove any pre-flight admin credential re-check or caller-principal guard in `useUploadPDF` mutation hook that short-circuits submission.
-- Fix the backend `uploadPDF` function in `backend/main.mo` to accept title, base64 content, and an array of faculty IDs, removing any `assert`, `isAdmin`, or caller-principal guard that causes authorization errors.
-- Ensure the backend persists the faculty assignment and returns a well-typed success or error variant.
-- Invalidate and refetch the PDF list query after a successful upload so the table reflects the new entry immediately.
-- Display inline error messages (e.g., PDF limit exceeded) when upload or assignment fails.
+- Update backend (`backend/main.mo`) subscription plan data to reflect exact pricing, faculty limits, PDF limits, and license counts for Basic, Premium, and Diamond tiers across Monthly, Quarterly, Half-yearly, and Yearly billing cycles
+- Set default plan to Basic Monthly with correct limits (30 faculty, 500 PDFs, 2 licenses, ₹8,000)
+- Remove any Free tier from the backend plan data model
+- Update frontend plan configuration in `useQueries.ts` and `SubscriptionSection.tsx` to match the new pricing and limits exactly
+- Display license count (2 / 4 / 6) on each plan card alongside faculty limit, PDF limit, and price
+- Remove Free plan card from the Subscription Management UI
 
-**User-visible outcome:** Admins authenticated via AdminPasscodeGate can upload a PDF, select one or more faculty members, submit the form without errors, and immediately see the newly assigned PDF appear in the PDF list table.
+**User-visible outcome:** The Subscription Management section shows three plan cards (Basic, Premium, Diamond) with correct faculty limits, PDF limits, license counts, and per-cycle prices. Selecting a billing cycle updates the displayed price correctly, and choosing a plan passes the accurate tier and cycle data to the backend.

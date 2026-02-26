@@ -96,10 +96,28 @@ export type AnnotationUpdateResult = {
     __kind__: "success";
     success: null;
 };
-export interface SyncState {
-    unsyncedChanges: bigint;
-    lastSyncTimestamp: bigint;
+export type AnnotationDeleteResult = {
+    __kind__: "error";
+    error: string;
+} | {
+    __kind__: "success";
+    success: null;
+};
+export interface PdfMetadata {
+    id: bigint;
+    title: string;
+    contentBase64: string;
+    assignedFaculty: Array<string>;
+    isTaught: boolean;
 }
+export type PriceList = Array<{
+    maxFaculty: bigint;
+    tier: PlanTier;
+    cycle: BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+}>;
 export interface Annotation {
     id: bigint;
     fillColor?: string;
@@ -120,14 +138,15 @@ export type SyncResult = {
     __kind__: "success";
     success: SyncState;
 };
+export interface SubscriptionPlan {
+    maxFaculty: bigint;
+    tier: PlanTier;
+    cycle: BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+}
 export type AnnotationCreateResult = {
-    __kind__: "error";
-    error: string;
-} | {
-    __kind__: "success";
-    success: null;
-};
-export type AnnotationDeleteResult = {
     __kind__: "error";
     error: string;
 } | {
@@ -137,6 +156,21 @@ export type AnnotationDeleteResult = {
 export interface UserProfile {
     name: string;
 }
+export interface SyncState {
+    unsyncedChanges: bigint;
+    lastSyncTimestamp: bigint;
+}
+export enum BillingCycle {
+    quarterly = "quarterly",
+    monthly = "monthly",
+    halfYearly = "halfYearly",
+    yearly = "yearly"
+}
+export enum PlanTier {
+    premium = "premium",
+    diamond = "diamond",
+    basic = "basic"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -145,17 +179,28 @@ export enum UserRole {
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addAnnotation(annotation: Annotation): Promise<AnnotationCreateResult>;
+    addPdf(pdf: PdfMetadata): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteAnnotation(_annotationId: bigint): Promise<AnnotationDeleteResult>;
+    getActiveSubscriptionPlan(): Promise<SubscriptionPlan>;
+    getAvailablePriceList(): Promise<PriceList>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getCurrentSubscriptionLimits(): Promise<{
+        maxFaculty: bigint;
+        maxPdfLimit: bigint;
+        maxLicenses: bigint;
+    }>;
+    getPdfById(pdfId: bigint): Promise<PdfMetadata | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    markPdfAsTaught(pdfId: bigint): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setSubscriptionPlan(newPlan: SubscriptionPlan): Promise<void>;
     syncAnnotations(): Promise<SyncResult>;
     updateAnnotation(_annotation: Annotation): Promise<AnnotationUpdateResult>;
 }
-import type { Annotation as _Annotation, AnnotationCreateResult as _AnnotationCreateResult, AnnotationDeleteResult as _AnnotationDeleteResult, AnnotationUpdateResult as _AnnotationUpdateResult, SyncResult as _SyncResult, SyncState as _SyncState, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { Annotation as _Annotation, AnnotationCreateResult as _AnnotationCreateResult, AnnotationDeleteResult as _AnnotationDeleteResult, AnnotationUpdateResult as _AnnotationUpdateResult, BillingCycle as _BillingCycle, PdfMetadata as _PdfMetadata, PlanTier as _PlanTier, PriceList as _PriceList, SubscriptionPlan as _SubscriptionPlan, SyncResult as _SyncResult, SyncState as _SyncState, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -186,6 +231,20 @@ export class Backend implements backendInterface {
             return from_candid_AnnotationCreateResult_n3(this._uploadFile, this._downloadFile, result);
         }
     }
+    async addPdf(arg0: PdfMetadata): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addPdf(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addPdf(arg0);
+            return result;
+        }
+    }
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
@@ -214,46 +273,106 @@ export class Backend implements backendInterface {
             return from_candid_AnnotationDeleteResult_n7(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getActiveSubscriptionPlan(): Promise<SubscriptionPlan> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getActiveSubscriptionPlan();
+                return from_candid_SubscriptionPlan_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getActiveSubscriptionPlan();
+            return from_candid_SubscriptionPlan_n8(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAvailablePriceList(): Promise<PriceList> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAvailablePriceList();
+                return from_candid_PriceList_n14(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAvailablePriceList();
+            return from_candid_PriceList_n14(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n16(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n16(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n9(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n17(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n9(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n17(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getCurrentSubscriptionLimits(): Promise<{
+        maxFaculty: bigint;
+        maxPdfLimit: bigint;
+        maxLicenses: bigint;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCurrentSubscriptionLimits();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCurrentSubscriptionLimits();
+            return result;
+        }
+    }
+    async getPdfById(arg0: bigint): Promise<PdfMetadata | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getPdfById(arg0);
+                return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getPdfById(arg0);
+            return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n16(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n16(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -267,6 +386,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async markPdfAsTaught(arg0: bigint): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markPdfAsTaught(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markPdfAsTaught(arg0);
             return result;
         }
     }
@@ -284,32 +417,46 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async setSubscriptionPlan(arg0: SubscriptionPlan): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setSubscriptionPlan(to_candid_SubscriptionPlan_n20(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setSubscriptionPlan(to_candid_SubscriptionPlan_n20(this._uploadFile, this._downloadFile, arg0));
+            return result;
+        }
+    }
     async syncAnnotations(): Promise<SyncResult> {
         if (this.processError) {
             try {
                 const result = await this.actor.syncAnnotations();
-                return from_candid_SyncResult_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_SyncResult_n26(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.syncAnnotations();
-            return from_candid_SyncResult_n11(this._uploadFile, this._downloadFile, result);
+            return from_candid_SyncResult_n26(this._uploadFile, this._downloadFile, result);
         }
     }
     async updateAnnotation(arg0: Annotation): Promise<AnnotationUpdateResult> {
         if (this.processError) {
             try {
                 const result = await this.actor.updateAnnotation(to_candid_Annotation_n1(this._uploadFile, this._downloadFile, arg0));
-                return from_candid_AnnotationUpdateResult_n13(this._uploadFile, this._downloadFile, result);
+                return from_candid_AnnotationUpdateResult_n28(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.updateAnnotation(to_candid_Annotation_n1(this._uploadFile, this._downloadFile, arg0));
-            return from_candid_AnnotationUpdateResult_n13(this._uploadFile, this._downloadFile, result);
+            return from_candid_AnnotationUpdateResult_n28(this._uploadFile, this._downloadFile, result);
         }
     }
 }
@@ -319,19 +466,78 @@ function from_candid_AnnotationCreateResult_n3(_uploadFile: (file: ExternalBlob)
 function from_candid_AnnotationDeleteResult_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnnotationDeleteResult): AnnotationDeleteResult {
     return from_candid_variant_n4(_uploadFile, _downloadFile, value);
 }
-function from_candid_AnnotationUpdateResult_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnnotationUpdateResult): AnnotationUpdateResult {
+function from_candid_AnnotationUpdateResult_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnnotationUpdateResult): AnnotationUpdateResult {
     return from_candid_variant_n4(_uploadFile, _downloadFile, value);
 }
-function from_candid_SyncResult_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SyncResult): SyncResult {
-    return from_candid_variant_n12(_uploadFile, _downloadFile, value);
+function from_candid_BillingCycle_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _BillingCycle): BillingCycle {
+    return from_candid_variant_n13(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n10(_uploadFile, _downloadFile, value);
+function from_candid_PlanTier_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PlanTier): PlanTier {
+    return from_candid_variant_n11(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_PriceList_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PriceList): PriceList {
+    return from_candid_vec_n15(_uploadFile, _downloadFile, value);
+}
+function from_candid_SubscriptionPlan_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SubscriptionPlan): SubscriptionPlan {
+    return from_candid_record_n9(_uploadFile, _downloadFile, value);
+}
+function from_candid_SyncResult_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SyncResult): SyncResult {
+    return from_candid_variant_n27(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n18(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_opt_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PdfMetadata]): PdfMetadata | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    maxFaculty: bigint;
+    tier: _PlanTier;
+    cycle: _BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+}): {
+    maxFaculty: bigint;
+    tier: PlanTier;
+    cycle: BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+} {
+    return {
+        maxFaculty: value.maxFaculty,
+        tier: from_candid_PlanTier_n10(_uploadFile, _downloadFile, value.tier),
+        cycle: from_candid_BillingCycle_n12(_uploadFile, _downloadFile, value.cycle),
+        maxPdfLimit: value.maxPdfLimit,
+        maxLicenses: value.maxLicenses,
+        priceInr: value.priceInr
+    };
+}
+function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    premium: null;
+} | {
+    diamond: null;
+} | {
+    basic: null;
+}): PlanTier {
+    return "premium" in value ? PlanTier.premium : "diamond" in value ? PlanTier.diamond : "basic" in value ? PlanTier.basic : value;
+}
+function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    quarterly: null;
+} | {
+    monthly: null;
+} | {
+    halfYearly: null;
+} | {
+    yearly: null;
+}): BillingCycle {
+    return "quarterly" in value ? BillingCycle.quarterly : "monthly" in value ? BillingCycle.monthly : "halfYearly" in value ? BillingCycle.halfYearly : "yearly" in value ? BillingCycle.yearly : value;
+}
+function from_candid_variant_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -340,7 +546,7 @@ function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     error: string;
 } | {
     success: _SyncState;
@@ -378,8 +584,34 @@ function from_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uin
         success: value.success
     } : value;
 }
+function from_candid_vec_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<{
+    maxFaculty: bigint;
+    tier: _PlanTier;
+    cycle: _BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+}>): Array<{
+    maxFaculty: bigint;
+    tier: PlanTier;
+    cycle: BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+}> {
+    return value.map((x)=>from_candid_record_n9(_uploadFile, _downloadFile, x));
+}
 function to_candid_Annotation_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Annotation): _Annotation {
     return to_candid_record_n2(_uploadFile, _downloadFile, value);
+}
+function to_candid_BillingCycle_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BillingCycle): _BillingCycle {
+    return to_candid_variant_n25(_uploadFile, _downloadFile, value);
+}
+function to_candid_PlanTier_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PlanTier): _PlanTier {
+    return to_candid_variant_n23(_uploadFile, _downloadFile, value);
+}
+function to_candid_SubscriptionPlan_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: SubscriptionPlan): _SubscriptionPlan {
+    return to_candid_record_n21(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n6(_uploadFile, _downloadFile, value);
@@ -422,6 +654,64 @@ function to_candid_record_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         shapeType: value.shapeType ? candid_some(value.shapeType) : candid_none(),
         coordinates: value.coordinates
     };
+}
+function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    maxFaculty: bigint;
+    tier: PlanTier;
+    cycle: BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+}): {
+    maxFaculty: bigint;
+    tier: _PlanTier;
+    cycle: _BillingCycle;
+    maxPdfLimit: bigint;
+    maxLicenses: bigint;
+    priceInr: bigint;
+} {
+    return {
+        maxFaculty: value.maxFaculty,
+        tier: to_candid_PlanTier_n22(_uploadFile, _downloadFile, value.tier),
+        cycle: to_candid_BillingCycle_n24(_uploadFile, _downloadFile, value.cycle),
+        maxPdfLimit: value.maxPdfLimit,
+        maxLicenses: value.maxLicenses,
+        priceInr: value.priceInr
+    };
+}
+function to_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PlanTier): {
+    premium: null;
+} | {
+    diamond: null;
+} | {
+    basic: null;
+} {
+    return value == PlanTier.premium ? {
+        premium: null
+    } : value == PlanTier.diamond ? {
+        diamond: null
+    } : value == PlanTier.basic ? {
+        basic: null
+    } : value;
+}
+function to_candid_variant_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BillingCycle): {
+    quarterly: null;
+} | {
+    monthly: null;
+} | {
+    halfYearly: null;
+} | {
+    yearly: null;
+} {
+    return value == BillingCycle.quarterly ? {
+        quarterly: null
+    } : value == BillingCycle.monthly ? {
+        monthly: null
+    } : value == BillingCycle.halfYearly ? {
+        halfYearly: null
+    } : value == BillingCycle.yearly ? {
+        yearly: null
+    } : value;
 }
 function to_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;

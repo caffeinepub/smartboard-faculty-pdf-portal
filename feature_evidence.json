@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-diagnose-and-fix-the-pdf-upload-assignment-flow-in-the-admin-panel-so-that-admins-can-successfully-assign-a-pdf-to-one-or-more-faculty-members-audit-the-pdfuploadform-component-frontend-src-components-pdfuploadform-tsx-and-the-useuploadpdf-mutation-hook-in-frontend-src-hooks-usequeries-ts-to-identify-why-the-assignment-fails-1-verify-the-faculty-selector-inside-the-form-correctly-populates-the-list-of-active-faculty-members-from-the-backend-2-ensure-the-selected-faculty-ids-are-collected-and-passed-correctly-to-the-backend-uploadpdf-call-3-ensure-no-pre-flight-admin-credential-re-check-short-circuits-the-submission-before-the-backend-is-contacted-4-ensure-the-backend-uploadpdf-function-in-backend-main-mo-accepts-the-faculty-assignment-parameter-and-persists-the-assignment-without-requiring-a-secondary-authorization-token-the-sessionstorage-flag-set-by-adminpasscodegate-is-the-sole-auth-signal-5-after-a-successful-upload-invalidate-and-refetch-the-pdf-list-query-so-the-table-reflects-the-newly-assigned-pdf-immediately",
-      "featureTitle": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members. Audit the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) and the `useUploadPDF` mutation hook in `frontend/src/hooks/useQueries.ts` to identify why the assignment fails: (1) verify the faculty selector inside the form correctly populates the list of active faculty members from the backend; (2) ensure the selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call; (3) ensure no pre-flight admin credential re-check short-circuits the submission before the backend is contacted; (4) ensure the backend `uploadPDF` function in `backend/main.mo` accepts the faculty assignment parameter and persists the assignment without requiring a secondary authorization token — the sessionStorage flag set by AdminPasscodeGate is the sole auth signal; (5) after a successful upload, invalidate and refetch the PDF list query so the table reflects the newly assigned PDF immediately.",
+      "featureId": "feature-update-the-plan-tier-configuration-object-in-frontend-src-hooks-usequeries-ts-and-any-other-frontend-location-where-plan-data-is-hardcoded-such-as-frontend-src-components-subscriptionsection-tsx-to-match-the-updated-pricing-limits-and-license-counts-exactly-basic-30-faculty-500-pdfs-2-licenses-premium-100-faculty-2000-pdfs-4-licenses-diamond-500-faculty-5000-pdfs-6-licenses-with-all-four-billing-cycle-prices-as-specified-each-plan-card-in-the-subscription-management-section-must-display-the-license-count-e-g-2-licenses-alongside-the-faculty-limit-pdf-limit-and-price",
+      "featureTitle": "Update the plan tier configuration object in `frontend/src/hooks/useQueries.ts` (and any other frontend location where plan data is hardcoded, such as `frontend/src/components/SubscriptionSection.tsx`) to match the updated pricing, limits, and license counts exactly: Basic (30 faculty, 500 PDFs, 2 licenses), Premium (100 faculty, 2000 PDFs, 4 licenses), Diamond (500 faculty, 5000 PDFs, 6 licenses), with all four billing cycle prices as specified. Each plan card in the Subscription Management section must display the license count (e.g., '2 Licenses') alongside the faculty limit, PDF limit, and price.",
       "files": [
-        "frontend/src/components/PDFUploadForm.tsx",
+        "frontend/src/components/SubscriptionSection.tsx",
         "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
@@ -17,27 +17,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-51"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-pdfuploadform-component-frontend-src-components-pdfuploadform-tsx-so-that-1-the-faculty-multi-select-field-fetches-and-renders-the-current-list-of-active-faculty-members-from-the-backend-on-mount-2-the-user-can-select-one-or-more-faculty-members-before-submitting-3-the-useuploadpdf-mutation-in-frontend-src-hooks-usequeries-ts-calls-actor-uploadpdf-title-base64content-selectedfacultyids-without-any-additional-admin-credential-argument-4-on-success-the-pdf-list-query-is-invalidated-and-refetched-5-on-failure-the-specific-error-returned-by-the-backend-e-g-pdf-limit-exceeded-is-shown-inline-in-the-form",
-      "featureTitle": "Update the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) so that: (1) the faculty multi-select field fetches and renders the current list of active faculty members from the backend on mount; (2) the user can select one or more faculty members before submitting; (3) the `useUploadPDF` mutation in `frontend/src/hooks/useQueries.ts` calls `actor.uploadPDF(title, base64Content, selectedFacultyIds)` without any additional admin credential argument; (4) on success, the PDF list query is invalidated and refetched; (5) on failure, the specific error returned by the backend (e.g., PDF limit exceeded) is shown inline in the form.",
-      "files": [
-        "frontend/src/components/PDFUploadForm.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-53"
+        "REQ-57"
       ],
       "confidence": "high"
     }

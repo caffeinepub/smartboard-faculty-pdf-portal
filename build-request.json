@@ -1,79 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Fix PDF-to-faculty assignment in Admin Panel",
+  "title": "Update subscription plan pricing, limits, and license counts",
   "projectName": "EduBoard",
-  "priority": "high",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-51",
-      "text": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members. Audit the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) and the `useUploadPDF` mutation hook in `frontend/src/hooks/useQueries.ts` to identify why the assignment fails: (1) verify the faculty selector inside the form correctly populates the list of active faculty members from the backend; (2) ensure the selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call; (3) ensure no pre-flight admin credential re-check short-circuits the submission before the backend is contacted; (4) ensure the backend `uploadPDF` function in `backend/main.mo` accepts the faculty assignment parameter and persists the assignment without requiring a secondary authorization token — the sessionStorage flag set by AdminPasscodeGate is the sole auth signal; (5) after a successful upload, invalidate and refetch the PDF list query so the table reflects the newly assigned PDF immediately.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "im not able to assign pdf to faculty"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The PDF upload form in the Admin Panel displays a populated list of active faculty members to assign to.",
-        "Selecting one or more faculty members and submitting the form successfully calls the backend uploadPDF function with the selected faculty IDs.",
-        "No admin credential prompt or authorization error appears when the user is already authenticated via AdminPasscodeGate.",
-        "The backend uploadPDF function persists the faculty assignment without requiring any additional credential token from the frontend.",
-        "After a successful upload, the PDF list table refreshes and shows the new PDF with the correct assigned faculty names.",
-        "If the PDF upload or faculty assignment fails, a descriptive error message is shown inline in the form."
-      ]
-    },
-    {
-      "id": "REQ-52",
-      "text": "Audit the backend `uploadPDF` function in `backend/main.mo` to ensure it does not enforce any caller-identity or admin-only access control check that would reject the call when invoked from the already-authenticated Admin Panel session. The function must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant. Remove or disable any `assert`, `isAdmin` check, or caller-principal guard that causes it to return an authorization error.",
+      "id": "REQ-56",
+      "text": "Update the backend subscription plan data model in `backend/main.mo` to reflect the following exact pricing and limits for all three tiers and four billing cycles. Basic: 30 faculty, 500 PDFs, 2 licenses — Monthly ₹8,000, Quarterly ₹25,000, Half-yearly ₹50,000, Yearly ₹1,00,000. Premium: 100 faculty, 2000 PDFs, 4 licenses — Monthly ₹16,500, Quarterly ₹50,000, Half-yearly ₹1,00,000, Yearly ₹2,00,000. Diamond: 500 faculty, 5000 PDFs, 6 licenses — Monthly ₹33,000, Quarterly ₹1,00,000, Half-yearly ₹2,00,000, Yearly ₹4,00,000. Each plan variant must store: tier name, billing cycle label, faculty limit, PDF limit, license count, and price in INR. Ensure the default plan (used on first deploy or when no plan has been explicitly selected) is set to Basic Monthly with its correct limits.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-recent"
         ],
         "quotes": [
-          "im not able to assign pdf to faculty"
+          "basic 30 faculty 500 pdf  8000 inr Monthly",
+          "Premium 100 faculty 2000 pdf  16500 inr Monthly",
+          "Diamond 500 faculty 5000 pdf  33000 inr Monthly",
+          "Basic Plan will have 2 Licenses",
+          "premium will have 4 Licenses",
+          "diamond will have 6 Licenses"
         ]
       },
       "acceptanceCriteria": [
-        "The backend uploadPDF function does not contain any caller-principal assertion or isAdmin guard that rejects the call.",
-        "Calling uploadPDF with a valid title, base64 PDF content, and a non-empty array of faculty IDs returns a success variant.",
-        "The stored PDF record includes the assigned faculty IDs and is retrievable via the getPDFsByFaculty and getAllPDFs functions.",
-        "The function returns a descriptive error variant only for genuine failures such as plan PDF limit exceeded, not for authorization reasons."
+        "Basic tier stores facultyLimit=30, pdfLimit=500, licenseCount=2 for all billing cycles",
+        "Premium tier stores facultyLimit=100, pdfLimit=2000, licenseCount=4 for all billing cycles",
+        "Diamond tier stores facultyLimit=500, pdfLimit=5000, licenseCount=6 for all billing cycles",
+        "Basic Monthly price is 8000 INR, Quarterly 25000, Half-yearly 50000, Yearly 100000",
+        "Premium Monthly price is 16500 INR, Quarterly 50000, Half-yearly 100000, Yearly 200000",
+        "Diamond Monthly price is 33000 INR, Quarterly 100000, Half-yearly 200000, Yearly 400000",
+        "Default plan on first deploy is Basic Monthly with correct non-zero limits",
+        "No Free tier exists in the backend plan data model"
       ]
     },
     {
-      "id": "REQ-53",
-      "text": "Update the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) so that: (1) the faculty multi-select field fetches and renders the current list of active faculty members from the backend on mount; (2) the user can select one or more faculty members before submitting; (3) the `useUploadPDF` mutation in `frontend/src/hooks/useQueries.ts` calls `actor.uploadPDF(title, base64Content, selectedFacultyIds)` without any additional admin credential argument; (4) on success, the PDF list query is invalidated and refetched; (5) on failure, the specific error returned by the backend (e.g., PDF limit exceeded) is shown inline in the form.",
+      "id": "REQ-57",
+      "text": "Update the plan tier configuration object in `frontend/src/hooks/useQueries.ts` (and any other frontend location where plan data is hardcoded, such as `frontend/src/components/SubscriptionSection.tsx`) to match the updated pricing, limits, and license counts exactly: Basic (30 faculty, 500 PDFs, 2 licenses), Premium (100 faculty, 2000 PDFs, 4 licenses), Diamond (500 faculty, 5000 PDFs, 6 licenses), with all four billing cycle prices as specified. Each plan card in the Subscription Management section must display the license count (e.g., '2 Licenses') alongside the faculty limit, PDF limit, and price.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-recent"
         ],
         "quotes": [
-          "im not able to assign pdf to faculty"
+          "basic 30 faculty 500 pdf  8000 inr Monthly",
+          "Diamond 500 faculty 5000 pdf  400000 inr  yearly",
+          "Basic Plan will have 2 Licenses",
+          "premium will have 4 Licenses",
+          "diamond will have 6 Licenses"
         ]
       },
       "acceptanceCriteria": [
-        "The faculty selector in PDFUploadForm shows all active faculty members fetched from the backend.",
-        "At least one faculty member must be selected before the form allows submission.",
-        "The mutation calls actor.uploadPDF with title, base64 content, and the array of selected faculty IDs — no admin token argument.",
-        "On successful submission, the PDF list table is automatically refreshed.",
-        "Error messages from the backend (e.g., PDF limit reached) are displayed inline without crashing the form."
+        "SubscriptionSection displays three plan cards: Basic, Premium, Diamond — no Free plan card",
+        "Each card shows the correct faculty limit, PDF limit, license count, and per-cycle price",
+        "Basic card shows: 30 Faculty, 500 PDFs, 2 Licenses, with prices 8000/25000/50000/100000 INR per cycle",
+        "Premium card shows: 100 Faculty, 2000 PDFs, 4 Licenses, with prices 16500/50000/100000/200000 INR per cycle",
+        "Diamond card shows: 500 Faculty, 5000 PDFs, 6 Licenses, with prices 33000/100000/200000/400000 INR per cycle",
+        "Billing cycle selector on each card updates the displayed price correctly",
+        "Selecting a plan passes the correct tier and billing cycle to the backend updatePlan call",
+        "The plan tier configuration in useQueries.ts matches these exact values"
       ]
     }
   ],
   "constraints": [
-    "Do not re-introduce any secondary admin credential check inside PDFUploadForm, useUploadPDF, or the backend uploadPDF function.",
-    "The sessionStorage flag set by AdminPasscodeGate remains the sole source of truth for admin authentication within the session.",
-    "Do not modify files under frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts, frontend/src/main.tsx, or frontend/src/components/ui."
+    "Do not remove or alter the billing cycle selector (Monthly, Quarterly, Half-yearly, Yearly) on plan cards",
+    "Do not change any other part of the Admin Panel beyond the subscription plan data",
+    "Preserve all existing backend functions and their signatures; only update plan data constants/initialization",
+    "The Free plan must not reappear anywhere in backend or frontend"
   ],
   "nonGoals": [
-    "Changing the PDF data model or annotation system.",
-    "Altering the subscription plan enforcement logic beyond what is needed to unblock PDF upload.",
-    "Modifying the faculty creation flow (already addressed in prior requirements)."
+    "Changing the visual layout or styling of the Subscription Management section",
+    "Adding payment processing or external billing integrations",
+    "Modifying faculty management, PDF upload, device management, or any other Admin Panel section",
+    "Changing authentication flows or admin credential logic"
   ],
   "imageRequirements": {
     "required": [],

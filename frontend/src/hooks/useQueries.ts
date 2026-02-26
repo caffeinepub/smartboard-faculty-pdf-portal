@@ -48,6 +48,7 @@ export interface PlanTier {
   label: string;
   maxFaculty: number;
   maxPdfs: number;
+  licenseCount: number;
   features: string[];
   billingCycles: BillingCycleOption[];
 }
@@ -58,9 +59,11 @@ export const PLAN_TIERS: PlanTier[] = [
     label: 'Basic',
     maxFaculty: 30,
     maxPdfs: 500,
+    licenseCount: 2,
     features: [
       'Up to 30 faculty members',
       'Up to 500 PDFs',
+      '2 Licenses',
       'Full annotations',
       'Smart board view',
       'Priority support',
@@ -77,9 +80,11 @@ export const PLAN_TIERS: PlanTier[] = [
     label: 'Premium',
     maxFaculty: 100,
     maxPdfs: 2000,
+    licenseCount: 4,
     features: [
       'Up to 100 faculty members',
       'Up to 2000 PDFs',
+      '4 Licenses',
       'Full annotations',
       'Smart board view',
       'Priority support',
@@ -97,9 +102,11 @@ export const PLAN_TIERS: PlanTier[] = [
     label: 'Diamond',
     maxFaculty: 500,
     maxPdfs: 5000,
+    licenseCount: 6,
     features: [
       'Up to 500 faculty members',
       'Up to 5000 PDFs',
+      '6 Licenses',
       'Full annotations',
       'Smart board view',
       'Dedicated support',

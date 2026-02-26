@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -10,58 +10,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Check, Crown, Zap, Star } from 'lucide-react';
+import { Check, Crown, Zap, Star, KeyRound } from 'lucide-react';
+import { PLAN_TIERS, BillingCycle } from '@/hooks/useQueries';
 
-type BillingCycle = 'monthly' | 'quarterly' | 'halfyearly' | 'yearly';
-type PlanTier = 'basic' | 'premium' | 'diamond';
+type PlanName = 'basic' | 'premium' | 'diamond';
 
-interface PlanConfig {
-  name: string;
-  icon: React.ReactNode;
-  facultyLimit: number;
-  pdfLimit: number;
-  features: string[];
-  prices: Record<BillingCycle, number>;
-}
-
-const PLANS: Record<PlanTier, PlanConfig> = {
-  basic: {
-    name: 'Basic',
-    icon: <Zap className="h-5 w-5" />,
-    facultyLimit: 30,
-    pdfLimit: 100,
-    features: ['30 Faculty Members', '100 PDFs', 'Basic Annotations', 'Email Support'],
-    prices: { monthly: 999, quarterly: 2699, halfyearly: 4999, yearly: 8999 },
-  },
-  premium: {
-    name: 'Premium',
-    icon: <Star className="h-5 w-5" />,
-    facultyLimit: 100,
-    pdfLimit: 500,
-    features: ['100 Faculty Members', '500 PDFs', 'Advanced Annotations', 'Priority Support', 'Analytics'],
-    prices: { monthly: 2499, quarterly: 6999, halfyearly: 12999, yearly: 22999 },
-  },
-  diamond: {
-    name: 'Diamond',
-    icon: <Crown className="h-5 w-5" />,
-    facultyLimit: 500,
-    pdfLimit: 2000,
-    features: ['500 Faculty Members', '2000 PDFs', 'All Annotation Tools', '24/7 Support', 'Analytics', 'Custom Branding'],
-    prices: { monthly: 5999, quarterly: 16999, halfyearly: 31999, yearly: 55999 },
-  },
-};
-
-const BILLING_LABELS: Record<BillingCycle, string> = {
-  monthly: 'Monthly',
-  quarterly: 'Quarterly',
-  halfyearly: 'Half-yearly',
-  yearly: 'Yearly',
+const PLAN_ICONS: Record<PlanName, React.ReactNode> = {
+  basic: <Zap className="h-5 w-5" />,
+  premium: <Star className="h-5 w-5" />,
+  diamond: <Crown className="h-5 w-5" />,
 };
 
 const STORAGE_KEY = 'adminSubscription';
 
 interface SubscriptionState {
-  tier: PlanTier;
+  tier: PlanName;
   billing: BillingCycle;
 }
 
@@ -79,29 +42,33 @@ export default function SubscriptionSection({ facultyCount = 0, pdfCount = 0 }: 
     return { tier: 'basic', billing: 'monthly' };
   });
 
-  const [selectedBilling, setSelectedBilling] = useState<Record<PlanTier, BillingCycle>>({
-    basic: subscription.billing,
-    premium: subscription.billing,
-    diamond: subscription.billing,
+  const [selectedBilling, setSelectedBilling] = useState<Record<PlanName, BillingCycle>>(() => {
+    return {
+      basic: subscription.billing,
+      premium: subscription.billing,
+      diamond: subscription.billing,
+    };
   });
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(subscription));
+    // Also persist plan name for faculty/pdf limit checks
+    localStorage.setItem('eduboard_plan', subscription.tier);
   }, [subscription]);
 
-  const handleSelectPlan = (tier: PlanTier) => {
+  const handleSelectPlan = (tier: PlanName) => {
     setSubscription({ tier, billing: selectedBilling[tier] });
   };
-
-  const activePlan = PLANS[subscription.tier];
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {(Object.entries(PLANS) as [PlanTier, PlanConfig][]).map(([tier, plan]) => {
+        {PLAN_TIERS.map((plan) => {
+          const tier = plan.name as PlanName;
           const isActive = subscription.tier === tier;
           const billing = selectedBilling[tier];
-          const price = plan.prices[billing];
+          const cycleOption = plan.billingCycles.find((c) => c.key === billing) ?? plan.billingCycles[0];
+          const price = cycleOption.priceInr;
 
           return (
             <Card
@@ -120,9 +87,9 @@ export default function SubscriptionSection({ facultyCount = 0, pdfCount = 0 }: 
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <span className={isActive ? 'text-primary' : 'text-muted-foreground'}>
-                    {plan.icon}
+                    {PLAN_ICONS[tier]}
                   </span>
-                  <CardTitle className="text-lg">{plan.name}</CardTitle>
+                  <CardTitle className="text-lg">{plan.label}</CardTitle>
                 </div>
                 <div className="mt-2">
                   <Select
@@ -135,13 +102,11 @@ export default function SubscriptionSection({ facultyCount = 0, pdfCount = 0 }: 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.entries(BILLING_LABELS) as [BillingCycle, string][]).map(
-                        ([cycle, label]) => (
-                          <SelectItem key={cycle} value={cycle} className="text-xs">
-                            {label}
-                          </SelectItem>
-                        )
-                      )}
+                      {plan.billingCycles.map((cycle) => (
+                        <SelectItem key={cycle.key} value={cycle.key} className="text-xs">
+                          {cycle.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -150,41 +115,51 @@ export default function SubscriptionSection({ facultyCount = 0, pdfCount = 0 }: 
                     ₹{price.toLocaleString('en-IN')}
                   </span>
                   <span className="text-muted-foreground text-sm ml-1">
-                    /{BILLING_LABELS[billing].toLowerCase()}
+                    /{cycleOption.label.toLowerCase()}
                   </span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+                {/* Key stats grid */}
+                <div className="grid grid-cols-3 gap-2">
                   <div className="bg-muted/50 rounded-lg p-2 text-center">
-                    <div className="text-lg font-bold text-foreground">{plan.facultyLimit}</div>
+                    <div className="text-base font-bold text-foreground">{plan.maxFaculty}</div>
                     <div className="text-xs text-muted-foreground">Faculty</div>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-2 text-center">
-                    <div className="text-lg font-bold text-foreground">{plan.pdfLimit}</div>
+                    <div className="text-base font-bold text-foreground">{plan.maxPdfs.toLocaleString()}</div>
                     <div className="text-xs text-muted-foreground">PDFs</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <KeyRound className="h-3 w-3 text-primary" />
+                      <div className="text-base font-bold text-foreground">{plan.licenseCount}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">Licenses</div>
                   </div>
                 </div>
 
+                {/* Usage progress bars for active plan */}
                 {isActive && (
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Faculty Usage</span>
-                        <span>{facultyCount}/{plan.facultyLimit}</span>
+                        <span>{facultyCount}/{plan.maxFaculty}</span>
                       </div>
-                      <Progress value={(facultyCount / plan.facultyLimit) * 100} className="h-1.5" />
+                      <Progress value={(facultyCount / plan.maxFaculty) * 100} className="h-1.5" />
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>PDF Usage</span>
-                        <span>{pdfCount}/{plan.pdfLimit}</span>
+                        <span>{pdfCount}/{plan.maxPdfs}</span>
                       </div>
-                      <Progress value={(pdfCount / plan.pdfLimit) * 100} className="h-1.5" />
+                      <Progress value={(pdfCount / plan.maxPdfs) * 100} className="h-1.5" />
                     </div>
                   </div>
                 )}
 
+                {/* Feature list */}
                 <ul className="space-y-1">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -201,7 +176,7 @@ export default function SubscriptionSection({ facultyCount = 0, pdfCount = 0 }: 
                   onClick={() => handleSelectPlan(tier)}
                   disabled={isActive}
                 >
-                  {isActive ? 'Current Plan' : `Switch to ${plan.name}`}
+                  {isActive ? 'Current Plan' : `Switch to ${plan.label}`}
                 </Button>
               </CardContent>
             </Card>

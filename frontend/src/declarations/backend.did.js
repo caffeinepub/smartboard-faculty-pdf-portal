@@ -25,6 +25,13 @@ export const AnnotationCreateResult = IDL.Variant({
   'error' : IDL.Text,
   'success' : IDL.Null,
 });
+export const PdfMetadata = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'contentBase64' : IDL.Text,
+  'assignedFaculty' : IDL.Vec(IDL.Text),
+  'isTaught' : IDL.Bool,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -34,6 +41,35 @@ export const AnnotationDeleteResult = IDL.Variant({
   'error' : IDL.Text,
   'success' : IDL.Null,
 });
+export const PlanTier = IDL.Variant({
+  'premium' : IDL.Null,
+  'diamond' : IDL.Null,
+  'basic' : IDL.Null,
+});
+export const BillingCycle = IDL.Variant({
+  'quarterly' : IDL.Null,
+  'monthly' : IDL.Null,
+  'halfYearly' : IDL.Null,
+  'yearly' : IDL.Null,
+});
+export const SubscriptionPlan = IDL.Record({
+  'maxFaculty' : IDL.Nat,
+  'tier' : PlanTier,
+  'cycle' : BillingCycle,
+  'maxPdfLimit' : IDL.Nat,
+  'maxLicenses' : IDL.Nat,
+  'priceInr' : IDL.Nat,
+});
+export const PriceList = IDL.Vec(
+  IDL.Record({
+    'maxFaculty' : IDL.Nat,
+    'tier' : PlanTier,
+    'cycle' : BillingCycle,
+    'maxPdfLimit' : IDL.Nat,
+    'maxLicenses' : IDL.Nat,
+    'priceInr' : IDL.Nat,
+  })
+);
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 export const SyncState = IDL.Record({
   'unsyncedChanges' : IDL.Nat,
@@ -51,17 +87,34 @@ export const AnnotationUpdateResult = IDL.Variant({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addAnnotation' : IDL.Func([Annotation], [AnnotationCreateResult], []),
+  'addPdf' : IDL.Func([PdfMetadata], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteAnnotation' : IDL.Func([IDL.Nat], [AnnotationDeleteResult], []),
+  'getActiveSubscriptionPlan' : IDL.Func([], [SubscriptionPlan], ['query']),
+  'getAvailablePriceList' : IDL.Func([], [PriceList], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCurrentSubscriptionLimits' : IDL.Func(
+      [],
+      [
+        IDL.Record({
+          'maxFaculty' : IDL.Nat,
+          'maxPdfLimit' : IDL.Nat,
+          'maxLicenses' : IDL.Nat,
+        }),
+      ],
+      ['query'],
+    ),
+  'getPdfById' : IDL.Func([IDL.Nat], [IDL.Opt(PdfMetadata)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'markPdfAsTaught' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setSubscriptionPlan' : IDL.Func([SubscriptionPlan], [], []),
   'syncAnnotations' : IDL.Func([], [SyncResult], []),
   'updateAnnotation' : IDL.Func([Annotation], [AnnotationUpdateResult], []),
 });
@@ -86,6 +139,13 @@ export const idlFactory = ({ IDL }) => {
     'error' : IDL.Text,
     'success' : IDL.Null,
   });
+  const PdfMetadata = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'contentBase64' : IDL.Text,
+    'assignedFaculty' : IDL.Vec(IDL.Text),
+    'isTaught' : IDL.Bool,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -95,6 +155,35 @@ export const idlFactory = ({ IDL }) => {
     'error' : IDL.Text,
     'success' : IDL.Null,
   });
+  const PlanTier = IDL.Variant({
+    'premium' : IDL.Null,
+    'diamond' : IDL.Null,
+    'basic' : IDL.Null,
+  });
+  const BillingCycle = IDL.Variant({
+    'quarterly' : IDL.Null,
+    'monthly' : IDL.Null,
+    'halfYearly' : IDL.Null,
+    'yearly' : IDL.Null,
+  });
+  const SubscriptionPlan = IDL.Record({
+    'maxFaculty' : IDL.Nat,
+    'tier' : PlanTier,
+    'cycle' : BillingCycle,
+    'maxPdfLimit' : IDL.Nat,
+    'maxLicenses' : IDL.Nat,
+    'priceInr' : IDL.Nat,
+  });
+  const PriceList = IDL.Vec(
+    IDL.Record({
+      'maxFaculty' : IDL.Nat,
+      'tier' : PlanTier,
+      'cycle' : BillingCycle,
+      'maxPdfLimit' : IDL.Nat,
+      'maxLicenses' : IDL.Nat,
+      'priceInr' : IDL.Nat,
+    })
+  );
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
   const SyncState = IDL.Record({
     'unsyncedChanges' : IDL.Nat,
@@ -109,17 +198,34 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addAnnotation' : IDL.Func([Annotation], [AnnotationCreateResult], []),
+    'addPdf' : IDL.Func([PdfMetadata], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteAnnotation' : IDL.Func([IDL.Nat], [AnnotationDeleteResult], []),
+    'getActiveSubscriptionPlan' : IDL.Func([], [SubscriptionPlan], ['query']),
+    'getAvailablePriceList' : IDL.Func([], [PriceList], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCurrentSubscriptionLimits' : IDL.Func(
+        [],
+        [
+          IDL.Record({
+            'maxFaculty' : IDL.Nat,
+            'maxPdfLimit' : IDL.Nat,
+            'maxLicenses' : IDL.Nat,
+          }),
+        ],
+        ['query'],
+      ),
+    'getPdfById' : IDL.Func([IDL.Nat], [IDL.Opt(PdfMetadata)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'markPdfAsTaught' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setSubscriptionPlan' : IDL.Func([SubscriptionPlan], [], []),
     'syncAnnotations' : IDL.Func([], [SyncResult], []),
     'updateAnnotation' : IDL.Func([Annotation], [AnnotationUpdateResult], []),
   });

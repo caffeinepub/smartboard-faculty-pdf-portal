@@ -1,72 +1,42 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T18:47:03.853Z",
-  "summary": "The diff addresses the PDF-to-faculty assignment fix across frontend and backend. The frontend PDFUploadForm, useQueries hooks, and AdminPanel have been updated. However, the backend main.mo does not implement uploadPDF, getPDFsByFaculty, or getAllPDFs functions — all PDF/faculty data remains localStorage-based. The backend changes are essentially unrelated to the requirements (migration scaffolding and annotation/user-profile functions only). REQ-52 backend requirements are not met.",
+  "generatedAt": "2026-02-26T03:02:10.945Z",
+  "summary": "The diff implements both REQ-56 (backend) and REQ-57 (frontend) largely correctly. The frontend PLAN_TIERS in useQueries.ts has exact correct values, SubscriptionSection.tsx uses the PLAN_TIERS and shows billing cycle selectors, and backend/main.mo has been updated. However, backend/main.mo is truncated so full verification of REQ-56 acceptance criteria (exact pricing constants, default plan, no Free tier) cannot be confirmed with certainty. The migration.mo file adds a currentPlan field with correct tier variants. One concern: the SubscriptionSection.tsx is also truncated before the card body rendering JSX, so explicit rendering of licenseCount as a standalone display field cannot be fully confirmed.",
   "missing_requirements": [
     {
-      "id": "REQ-52",
-      "requirement": "The backend uploadPDF function in backend/main.mo must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant, with no caller-principal assertion or isAdmin guard.",
-      "reason": "The modified backend/main.mo contains no uploadPDF function at all. It only defines annotation and user-profile functions. There is no backend implementation of PDF storage, faculty assignment persistence, getPDFsByFaculty, or getAllPDFs in the diff.",
+      "id": "REQ-56",
+      "requirement": "Backend plan data model must store exact pricing and limits for all three tiers and four billing cycles, with default plan Basic Monthly and no Free tier",
+      "reason": "backend/main.mo is truncated — the subscription plan data constants and initialization code are not visible in the diff, so exact prices, the default plan setup, and absence of Free tier cannot be fully confirmed.",
       "evidence": [
         "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-52",
-      "requirement": "The stored PDF record includes the assigned faculty IDs and is retrievable via getPDFsByFaculty and getAllPDFs functions.",
-      "reason": "Neither getPDFsByFaculty nor getAllPDFs appear in the backend/main.mo diff. PDF data remains in localStorage on the frontend only.",
+      "id": "REQ-57",
+      "requirement": "Each plan card must explicitly display the license count (e.g., '2 Licenses') alongside faculty limit, PDF limit, and price in the rendered UI",
+      "reason": "SubscriptionSection.tsx is truncated before the card body rendering JSX. While licenseCount is present in PLAN_TIERS and feature strings include license counts, the explicit rendering of licenseCount as a standalone UI element in the card cannot be confirmed from the truncated diff.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "id": "REQ-51",
-      "requirement": "The backend uploadPDF function persists the faculty assignment without requiring any additional credential token from the frontend.",
-      "reason": "No backend uploadPDF function exists in the diff; the frontend mutation calls into localStorage helpers, not a canister actor call, so true backend persistence is absent.",
-      "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "id": "REQ-53",
-      "requirement": "The useUploadPDF mutation in frontend/src/hooks/useQueries.ts calls actor.uploadPDF(title, base64Content, selectedFacultyIds) without any additional admin credential argument.",
-      "reason": "The useQueries.ts diff shows localStorage-based PDF storage rather than calling actor.uploadPDF. The mutation does not call any backend canister actor method for PDF upload.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/components/SubscriptionSection.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "A migration module (backend/migration.mo) was added with OldActor/NewActor types and a run function for data migration.",
-      "reason": "No migration module was requested in any of REQ-51, REQ-52, or REQ-53. This is extra infrastructure not requested by the build spec.",
+      "description": "A migration module (backend/migration.mo) was added to handle schema migration for the currentPlan field",
+      "reason": "The build request only asked to update plan data constants and initialization and preserve existing backend functions. Adding a dedicated migration module was not explicitly requested in any requirement.",
       "evidence": [
         "backend/migration.mo"
       ]
     }
   ],
-  "confidence": 0.82,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/AdminPasscodeGate.tsx",
-    "frontend/src/components/AnnotationCanvas.tsx",
-    "frontend/src/components/ChangeAdminCredentialsForm.tsx",
-    "frontend/src/components/FacultyManagementTable.tsx",
-    "frontend/src/components/FacultyPDFList.tsx",
-    "frontend/src/components/FacultySelector.tsx",
-    "frontend/src/components/PDFListTable.tsx",
-    "frontend/src/components/PDFUploadForm.tsx",
-    "frontend/src/context/FacultyContext.tsx",
+    "frontend/src/components/SubscriptionSection.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AdminPanel.tsx",
-    "frontend/src/pages/DeveloperPortal.tsx",
-    "frontend/src/pages/FacultyPortal.tsx",
-    "frontend/src/pages/TeachingView.tsx",
     "project_state.json"
   ]
 }

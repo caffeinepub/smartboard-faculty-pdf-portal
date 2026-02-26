@@ -1,46 +1,33 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T18:47:03.858Z",
+  "generatedAt": "2026-02-26T03:02:10.951Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 2,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-51",
-        "summary": "Diagnose and fix the PDF upload/assignment flow in the Admin Panel so that admins can successfully assign a PDF to one or more faculty members. Audit the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) and the `useUploadPDF` mutation hook in `frontend/src/hooks/useQueries.ts` to identify why the assignment fails: (1) verify the faculty selector inside the form correctly populates the list of active faculty members from the backend; (2) ensure the selected faculty IDs are collected and passed correctly to the backend `uploadPDF` call; (3) ensure no pre-flight admin credential re-check short-circuits the submission before the backend is contacted; (4) ensure the backend `uploadPDF` function in `backend/main.mo` accepts the faculty assignment parameter and persists the assignment without requiring a secondary authorization token — the sessionStorage flag set by AdminPasscodeGate is the sole auth signal; (5) after a successful upload, invalidate and refetch the PDF list query so the table reflects the newly assigned PDF immediately.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/PDFUploadForm.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/PDFUploadForm.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ]
-      },
-      {
-        "id": "REQ-52",
-        "summary": "Audit the backend `uploadPDF` function in `backend/main.mo` to ensure it does not enforce any caller-identity or admin-only access control check that would reject the call when invoked from the already-authenticated Admin Panel session. The function must accept a PDF title, base64 content, and an array of faculty IDs, store the PDF record with the faculty assignment, and return a well-typed success or error variant. Remove or disable any `assert`, `isAdmin` check, or caller-principal guard that causes it to return an authorization error.",
+        "id": "REQ-56",
+        "summary": "Update the backend subscription plan data model in `backend/main.mo` to reflect the following exact pricing and limits for all three tiers and four billing cycles. Basic: 30 faculty, 500 PDFs, 2 licenses — Monthly ₹8,000, Quarterly ₹25,000, Half-yearly ₹50,000, Yearly ₹1,00,000. Premium: 100 faculty, 2000 PDFs, 4 licenses — Monthly ₹16,500, Quarterly ₹50,000, Half-yearly ₹1,00,000, Yearly ₹2,00,000. Diamond: 500 faculty, 5000 PDFs, 6 licenses — Monthly ₹33,000, Quarterly ₹1,00,000, Half-yearly ₹2,00,000, Yearly ₹4,00,000. Each plan variant must store: tier name, billing cycle label, faculty limit, PDF limit, license count, and price in INR. Ensure the default plan (used on first deploy or when no plan has been explicitly selected) is set to Basic Monthly with its correct limits.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-53",
-        "summary": "Update the `PDFUploadForm` component (`frontend/src/components/PDFUploadForm.tsx`) so that: (1) the faculty multi-select field fetches and renders the current list of active faculty members from the backend on mount; (2) the user can select one or more faculty members before submitting; (3) the `useUploadPDF` mutation in `frontend/src/hooks/useQueries.ts` calls `actor.uploadPDF(title, base64Content, selectedFacultyIds)` without any additional admin credential argument; (4) on success, the PDF list query is invalidated and refetched; (5) on failure, the specific error returned by the backend (e.g., PDF limit exceeded) is shown inline in the form.",
+        "id": "REQ-57",
+        "summary": "Update the plan tier configuration object in `frontend/src/hooks/useQueries.ts` (and any other frontend location where plan data is hardcoded, such as `frontend/src/components/SubscriptionSection.tsx`) to match the updated pricing, limits, and license counts exactly: Basic (30 faculty, 500 PDFs, 2 licenses), Premium (100 faculty, 2000 PDFs, 4 licenses), Diamond (500 faculty, 5000 PDFs, 6 licenses), with all four billing cycle prices as specified. Each plan card in the Subscription Management section must display the license count (e.g., '2 Licenses') alongside the faculty limit, PDF limit, and price.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/PDFUploadForm.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/SubscriptionSection.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/PDFUploadForm.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/SubscriptionSection.tsx"
         ]
       }
     ]
@@ -49,27 +36,17 @@
     "backend/main.mo",
     "backend/migration.mo",
     "build-request.json",
+    "build-template/README.md",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/AdminPasscodeGate.tsx",
-    "frontend/src/components/AnnotationCanvas.tsx",
-    "frontend/src/components/ChangeAdminCredentialsForm.tsx",
-    "frontend/src/components/FacultyManagementTable.tsx",
-    "frontend/src/components/FacultyPDFList.tsx",
-    "frontend/src/components/FacultySelector.tsx",
-    "frontend/src/components/PDFListTable.tsx",
-    "frontend/src/components/PDFUploadForm.tsx",
-    "frontend/src/context/FacultyContext.tsx",
+    "frontend/src/components/SubscriptionSection.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AdminPanel.tsx",
-    "frontend/src/pages/DeveloperPortal.tsx",
-    "frontend/src/pages/FacultyPortal.tsx",
-    "frontend/src/pages/TeachingView.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -195,6 +195,7 @@ export interface LocalAnnotation {
 // ─── Admin credentials (localStorage-based) ───
 
 const ADMIN_CREDS_KEY = 'eduboard_admin_creds';
+const DEVELOPER_CREDS_KEY = 'eduboard_developer_creds';
 
 function getAdminCredentials(): { username: string; password: string } | null {
   try {
@@ -218,6 +219,152 @@ export function verifyAdminCredentials(username: string, password: string): bool
 
 export function setAdminCredentialsLocal(username: string, password: string): void {
   localStorage.setItem(ADMIN_CREDS_KEY, JSON.stringify({ username, password }));
+}
+
+export function getAdminUsername(): string | null {
+  const creds = getAdminCredentials();
+  return creds ? creds.username : null;
+}
+
+export function clearAdminCredentials(): void {
+  localStorage.removeItem(ADMIN_CREDS_KEY);
+}
+
+// ─── Developer credentials (localStorage-based) ───
+
+function getDeveloperCredentials(): { username: string; password: string } | null {
+  try {
+    const raw = localStorage.getItem(DEVELOPER_CREDS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function hasDeveloperCredentialsSet(): boolean {
+  return getDeveloperCredentials() !== null;
+}
+
+export function verifyDeveloperCredentials(username: string, password: string): boolean {
+  const creds = getDeveloperCredentials();
+  if (!creds) return false;
+  return creds.username === username && creds.password === password;
+}
+
+export function setDeveloperCredentialsLocal(username: string, password: string): void {
+  localStorage.setItem(DEVELOPER_CREDS_KEY, JSON.stringify({ username, password }));
+}
+
+export function initDefaultDeveloperCredentials(): void {
+  if (!hasDeveloperCredentialsSet()) {
+    setDeveloperCredentialsLocal('developer', 'dev1234');
+  }
+}
+
+export function getDeveloperUsername(): string | null {
+  const creds = getDeveloperCredentials();
+  return creds ? creds.username : null;
+}
+
+export function clearDeveloperCredentials(): void {
+  localStorage.removeItem(DEVELOPER_CREDS_KEY);
+}
+
+// ─── License management (localStorage-based) ───
+
+export type LicensePlanTier = 'basic' | 'premium' | 'diamond';
+
+export interface LicenseKey {
+  id: string;
+  planTier: LicensePlanTier;
+  billingCycle: BillingCycle;
+  maxDevices: number;
+  devicesUsed: number;
+  status: 'active' | 'revoked';
+  createdAt: number;
+  adminName?: string;
+}
+
+const LICENSES_KEY = 'eduboard_licenses';
+
+function generateLicenseId(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const segments = [4, 4, 4, 4];
+  return segments
+    .map((len) =>
+      Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+    )
+    .join('-');
+}
+
+function loadLicenses(): LicenseKey[] {
+  try {
+    const raw = localStorage.getItem(LICENSES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLicenses(list: LicenseKey[]): void {
+  localStorage.setItem(LICENSES_KEY, JSON.stringify(list));
+}
+
+export function useAllLicenses() {
+  return useQuery<LicenseKey[]>({
+    queryKey: ['licenses'],
+    queryFn: async () => loadLicenses(),
+    staleTime: 0,
+  });
+}
+
+export function useCreateLicense() {
+  const queryClient = useQueryClient();
+  return useMutation<LicenseKey, Error, { planTier: LicensePlanTier; billingCycle: BillingCycle; adminName?: string }>({
+    mutationFn: async ({ planTier, billingCycle, adminName }) => {
+      const list = loadLicenses();
+      const newLicense: LicenseKey = {
+        id: generateLicenseId(),
+        planTier,
+        billingCycle,
+        maxDevices: 10,
+        devicesUsed: 0,
+        status: 'active',
+        createdAt: Date.now(),
+        adminName,
+      };
+      saveLicenses([...list, newLicense]);
+      return newLicense;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+    },
+  });
+}
+
+export function useRevokeLicense() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (id: string) => {
+      saveLicenses(loadLicenses().map((l) => (l.id === id ? { ...l, status: 'revoked' as const } : l)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+    },
+  });
+}
+
+export function useDeleteLicense() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (id: string) => {
+      saveLicenses(loadLicenses().filter((l) => l.id !== id));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+    },
+  });
 }
 
 // ─── User Profile ────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { LayoutDashboard, GraduationCap, BookOpen, CheckCircle2, Pen, Users } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, BookOpen, CheckCircle2, Pen, Users, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -67,6 +67,15 @@ export default function HomePage() {
               <GraduationCap className="h-5 w-5 mr-2" />
               Faculty Portal
             </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-14 px-8 text-lg font-semibold border-indigo-300/40 text-primary-foreground hover:bg-indigo-600/20"
+              onClick={() => navigate({ to: '/dev-portal' })}
+            >
+              <Terminal className="h-5 w-5 mr-2" />
+              Developer Portal
+            </Button>
           </div>
         </div>
       </section>
@@ -117,6 +126,14 @@ export default function HomePage() {
             >
               <GraduationCap className="h-4 w-4 mr-2" />
               Go to Faculty Portal
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ to: '/dev-portal' })}
+              className="h-12 px-6 font-semibold border-indigo-300/40 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+            >
+              <Terminal className="h-4 w-4 mr-2" />
+              Developer Portal
             </Button>
           </div>
         </div>

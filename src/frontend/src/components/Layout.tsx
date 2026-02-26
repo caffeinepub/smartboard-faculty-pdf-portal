@@ -1,17 +1,23 @@
 import React from 'react';
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
-import { Settings, Lock, Heart } from 'lucide-react';
+import { Settings, Lock, Heart, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LOCK_EVENT } from './AdminPasscodeGate';
+import { DEVELOPER_LOCK_EVENT } from './DeveloperPasscodeGate';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const isAdminRoute = currentPath.startsWith('/admin');
+  const isDevRoute = currentPath.startsWith('/dev-portal');
 
   const handleLock = () => {
     window.dispatchEvent(new Event(LOCK_EVENT));
+  };
+
+  const handleDevLock = () => {
+    window.dispatchEvent(new Event(DEVELOPER_LOCK_EVENT));
   };
 
   const appId = encodeURIComponent(window.location.hostname || 'eduboard-smart-portal');
@@ -41,7 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               onClick={() => navigate({ to: '/faculty' })}
               className="gap-1.5 text-sm"
             >
-              Faculty Portal
+              Faculty
             </Button>
             <Button
               variant="ghost"
@@ -52,6 +58,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Settings className="h-4 w-4" />
               Admin
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate({ to: '/dev-portal' })}
+              className="gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+            >
+              <Terminal className="h-4 w-4" />
+              Dev
+            </Button>
             {isAdminRoute && (
               <Button
                 variant="outline"
@@ -61,6 +76,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 <Lock className="h-4 w-4" />
                 Lock
+              </Button>
+            )}
+            {isDevRoute && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDevLock}
+                className="gap-1.5 text-sm border-indigo-300/60 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                <Lock className="h-4 w-4" />
+                Dev Lock
               </Button>
             )}
           </nav>

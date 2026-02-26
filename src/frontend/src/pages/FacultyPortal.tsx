@@ -1,14 +1,12 @@
 import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { useActiveFaculty } from '@/hooks/useQueries';
 import FacultySelector from '../components/FacultySelector';
 import FacultyPDFList from '../components/FacultyPDFList';
 import { useFacultyContext } from '../context/FacultyContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Code2 } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 export default function FacultyPortal() {
-  const navigate = useNavigate();
   const { selectedFacultyId, selectedFacultyName, setSelectedFaculty, clearSelectedFaculty } =
     useFacultyContext();
   const { data: facultyList = [], isLoading } = useActiveFaculty();
@@ -29,14 +27,6 @@ export default function FacultyPortal() {
           isLoading={isLoading}
           onSelect={handleSelect}
         />
-        <div className="flex justify-center pb-8">
-          <button
-            onClick={() => navigate({ to: '/dev-portal' })}
-            className="text-xs text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
-          >
-            Developer Access
-          </button>
-        </div>
       </div>
     );
   }
@@ -54,21 +44,10 @@ export default function FacultyPortal() {
             <p className="text-xs text-muted-foreground">Faculty Portal</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: '/dev-portal' })}
-            className="gap-1.5 text-xs text-muted-foreground"
-          >
-            <Code2 className="h-3.5 w-3.5" />
-            Dev Portal
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5">
-            <LogOut className="h-4 w-4" />
-            Switch Faculty
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5">
+          <LogOut className="h-4 w-4" />
+          Switch Faculty
+        </Button>
       </div>
 
       {/* PDF List */}

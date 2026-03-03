@@ -1,7 +1,12 @@
+import { PLAN_TIERS, getDeviceLimitForPlan } from "@/hooks/useQueries";
 import { MonitorX, Phone, ShieldX } from "lucide-react";
 import React from "react";
 
 export default function DeviceLimitBlocker() {
+  const deviceLimit = getDeviceLimitForPlan();
+  const planName = localStorage.getItem("eduboard_plan") || "basic";
+  const plan = PLAN_TIERS.find((p) => p.name === planName) ?? PLAN_TIERS[0];
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
       {/* Decorative background */}
@@ -34,13 +39,30 @@ export default function DeviceLimitBlocker() {
         {/* Message */}
         <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-6 mb-6">
           <p className="text-foreground text-base leading-relaxed font-medium">
-            This license is already in use on{" "}
-            <span className="text-destructive font-bold">10 devices</span>.
+            Your{" "}
+            <span className="text-primary font-bold">{plan.label} Plan</span>{" "}
+            allows a maximum of{" "}
+            <span className="text-destructive font-bold">
+              {deviceLimit} devices
+            </span>
+            .
           </p>
           <p className="text-muted-foreground text-sm mt-2 leading-relaxed">
-            The maximum number of devices allowed per license has been reached.
-            No additional devices can be registered until an existing device is
-            removed.
+            This subscription has reached its device limit. No additional
+            devices can be registered until an existing device is removed, or
+            you subscribe again on a new device with a different plan.
+          </p>
+        </div>
+
+        {/* Re-subscribe note */}
+        <div className="bg-primary/8 border border-primary/20 rounded-xl p-4 mb-6">
+          <p className="text-sm text-foreground font-medium">
+            To use this app on a new device, please subscribe again with a new
+            subscription.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Upgrading to Premium (60 devices) or Diamond (100 devices) will
+            increase your device limit.
           </p>
         </div>
 
@@ -52,11 +74,12 @@ export default function DeviceLimitBlocker() {
           </span>
         </div>
 
-        {/* License info */}
+        {/* Plan info */}
         <div className="mt-6 p-3 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
-            <span className="font-semibold">EduBoard Smart Faculty Portal</span>
-            {" — "}License limit: 10 devices per license
+            <span className="font-semibold">SmartBoard Faculty PDF Portal</span>
+            {" — "}
+            {plan.label} Plan: {deviceLimit} devices allowed per year
           </p>
         </div>
       </div>

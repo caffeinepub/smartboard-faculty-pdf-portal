@@ -45,7 +45,7 @@ export type FacultyCreateResult =
   | { __kind__: "limitReached"; limit: number }
   | { __kind__: "error"; message: string };
 
-export type BillingCycle = "monthly" | "quarterly" | "halfYearly" | "yearly";
+export type BillingCycle = "yearly";
 
 export interface BillingCycleOption {
   key: BillingCycle;
@@ -58,7 +58,7 @@ export interface PlanTier {
   label: string;
   maxFaculty: number;
   maxPdfs: number;
-  licenseCount: number;
+  maxDevices: number;
   features: string[];
   billingCycles: BillingCycleOption[];
 }
@@ -69,68 +69,60 @@ export const PLAN_TIERS: PlanTier[] = [
     label: "Basic",
     maxFaculty: 30,
     maxPdfs: 500,
-    licenseCount: 2,
+    maxDevices: 30,
     features: [
       "Up to 30 faculty members",
       "Up to 500 PDFs",
-      "2 Licenses",
+      "30 devices allowed",
       "Full annotations",
       "Smart board view",
       "Priority support",
     ],
-    billingCycles: [
-      { key: "monthly", label: "Monthly", priceInr: 8000 },
-      { key: "quarterly", label: "Quarterly", priceInr: 25000 },
-      { key: "halfYearly", label: "Half-yearly", priceInr: 50000 },
-      { key: "yearly", label: "Yearly", priceInr: 100000 },
-    ],
+    billingCycles: [{ key: "yearly", label: "Yearly", priceInr: 300000 }],
   },
   {
     name: "premium",
     label: "Premium",
     maxFaculty: 100,
     maxPdfs: 2000,
-    licenseCount: 4,
+    maxDevices: 60,
     features: [
       "Up to 100 faculty members",
       "Up to 2000 PDFs",
-      "4 Licenses",
+      "60 devices allowed",
       "Full annotations",
       "Smart board view",
       "Priority support",
       "Advanced analytics",
     ],
-    billingCycles: [
-      { key: "monthly", label: "Monthly", priceInr: 16500 },
-      { key: "quarterly", label: "Quarterly", priceInr: 50000 },
-      { key: "halfYearly", label: "Half-yearly", priceInr: 100000 },
-      { key: "yearly", label: "Yearly", priceInr: 200000 },
-    ],
+    billingCycles: [{ key: "yearly", label: "Yearly", priceInr: 500000 }],
   },
   {
     name: "diamond",
     label: "Diamond",
     maxFaculty: 500,
     maxPdfs: 5000,
-    licenseCount: 6,
+    maxDevices: 100,
     features: [
       "Up to 500 faculty members",
       "Up to 5000 PDFs",
-      "6 Licenses",
+      "100 devices allowed",
       "Full annotations",
       "Smart board view",
       "Dedicated support",
       "Advanced analytics",
       "Custom integrations",
     ],
-    billingCycles: [
-      { key: "monthly", label: "Monthly", priceInr: 33000 },
-      { key: "quarterly", label: "Quarterly", priceInr: 100000 },
-      { key: "halfYearly", label: "Half-yearly", priceInr: 200000 },
-      { key: "yearly", label: "Yearly", priceInr: 400000 },
-    ],
+    billingCycles: [{ key: "yearly", label: "Yearly", priceInr: 700000 }],
   },
 ];
+
+/** Returns the device limit for the currently active subscription plan. */
+export function getDeviceLimitForPlan(): number {
+  const planName = localStorage.getItem("eduboard_plan") || "basic";
+  const plan = PLAN_TIERS.find((p) => p.name === planName) ?? PLAN_TIERS[0];
+  return plan.maxDevices;
+}
 
 // ─── localStorage helpers ───
 
@@ -376,11 +368,12 @@ export function useCreateLicense() {
   >({
     mutationFn: async ({ planTier, billingCycle, adminName }) => {
       const list = loadLicenses();
+      const plan = PLAN_TIERS.find((p) => p.name === planTier) ?? PLAN_TIERS[0];
       const newLicense: LicenseKey = {
         id: generateLicenseId(),
         planTier,
         billingCycle,
-        maxDevices: 10,
+        maxDevices: plan.maxDevices,
         devicesUsed: 0,
         status: "active",
         createdAt: Date.now(),

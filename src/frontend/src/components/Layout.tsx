@@ -32,7 +32,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <img
-              src="/assets/generated/rs-logo-icon-192.dim_192x192.png"
+              src="/assets/uploads/RS-logo-2-1.png"
               alt="RS Logo"
               className="h-10 w-10 object-contain rounded shadow-sm"
             />
@@ -103,7 +103,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 py-6 max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <img
-              src="/assets/generated/rs-logo-icon-192.dim_192x192.png"
+              src="/assets/uploads/RS-logo-2-1.png"
               alt="RS Logo"
               className="h-6 w-6 object-contain rounded"
             />

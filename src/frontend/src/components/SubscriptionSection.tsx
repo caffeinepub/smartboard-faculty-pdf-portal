@@ -2,15 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { type BillingCycle, PLAN_TIERS } from "@/hooks/useQueries";
-import { Check, Crown, KeyRound, Star, Zap } from "lucide-react";
+import { PLAN_TIERS } from "@/hooks/useQueries";
+import { Check, Crown, Monitor, Star, Zap } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 
@@ -26,44 +19,38 @@ const STORAGE_KEY = "adminSubscription";
 
 interface SubscriptionState {
   tier: PlanName;
-  billing: BillingCycle;
 }
 
 interface SubscriptionSectionProps {
   facultyCount?: number;
   pdfCount?: number;
+  deviceCount?: number;
 }
 
 export default function SubscriptionSection({
   facultyCount = 0,
   pdfCount = 0,
+  deviceCount = 0,
 }: SubscriptionSectionProps) {
   const [subscription, setSubscription] = useState<SubscriptionState>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { tier: parsed.tier ?? "basic" };
+      }
     } catch {}
-    return { tier: "basic", billing: "monthly" };
-  });
-
-  const [selectedBilling, setSelectedBilling] = useState<
-    Record<PlanName, BillingCycle>
-  >(() => {
-    return {
-      basic: subscription.billing,
-      premium: subscription.billing,
-      diamond: subscription.billing,
-    };
+    return { tier: "basic" };
   });
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(subscription));
-    // Also persist plan name for faculty/pdf limit checks
+    // Persist plan name for faculty/pdf/device limit checks
     localStorage.setItem("eduboard_plan", subscription.tier);
   }, [subscription]);
 
   const handleSelectPlan = (tier: PlanName) => {
-    setSubscription({ tier, billing: selectedBilling[tier] });
+    setSubscription({ tier });
   };
 
   return (
@@ -72,15 +59,13 @@ export default function SubscriptionSection({
         {PLAN_TIERS.map((plan) => {
           const tier = plan.name as PlanName;
           const isActive = subscription.tier === tier;
-          const billing = selectedBilling[tier];
-          const cycleOption =
-            plan.billingCycles.find((c) => c.key === billing) ??
-            plan.billingCycles[0];
+          const cycleOption = plan.billingCycles[0];
           const price = cycleOption.priceInr;
 
           return (
             <Card
               key={tier}
+              data-ocid={`subscription.${tier}.card`}
               className={`relative transition-all ${
                 isActive
                   ? "border-primary ring-2 ring-primary/20 shadow-elevated"
@@ -106,37 +91,16 @@ export default function SubscriptionSection({
                   <CardTitle className="text-lg">{plan.label}</CardTitle>
                 </div>
                 <div className="mt-2">
-                  <Select
-                    value={billing}
-                    onValueChange={(val) =>
-                      setSelectedBilling((prev) => ({
-                        ...prev,
-                        [tier]: val as BillingCycle,
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {plan.billingCycles.map((cycle) => (
-                        <SelectItem
-                          key={cycle.key}
-                          value={cycle.key}
-                          className="text-xs"
-                        >
-                          {cycle.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    Yearly
+                  </span>
                 </div>
-                <div className="mt-2">
+                <div className="mt-1">
                   <span className="text-2xl font-bold text-foreground">
                     ₹{price.toLocaleString("en-IN")}
                   </span>
                   <span className="text-muted-foreground text-sm ml-1">
-                    /{cycleOption.label.toLowerCase()}
+                    /year
                   </span>
                 </div>
               </CardHeader>
@@ -157,14 +121,12 @@ export default function SubscriptionSection({
                   </div>
                   <div className="bg-muted/50 rounded-lg p-2 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <KeyRound className="h-3 w-3 text-primary" />
+                      <Monitor className="h-3 w-3 text-primary" />
                       <div className="text-base font-bold text-foreground">
-                        {plan.licenseCount}
+                        {plan.maxDevices}
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Licenses
-                    </div>
+                    <div className="text-xs text-muted-foreground">Devices</div>
                   </div>
                 </div>
 
@@ -195,6 +157,18 @@ export default function SubscriptionSection({
                         className="h-1.5"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Device Usage</span>
+                        <span>
+                          {deviceCount}/{plan.maxDevices}
+                        </span>
+                      </div>
+                      <Progress
+                        value={(deviceCount / plan.maxDevices) * 100}
+                        className="h-1.5"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -212,6 +186,7 @@ export default function SubscriptionSection({
                 </ul>
 
                 <Button
+                  data-ocid={`subscription.${tier}.submit_button`}
                   variant={isActive ? "secondary" : "default"}
                   size="sm"
                   className="w-full"

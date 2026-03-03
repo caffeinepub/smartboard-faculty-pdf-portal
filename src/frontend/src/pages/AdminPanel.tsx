@@ -51,6 +51,7 @@ import {
   useAllDepartments,
   useAllFacultyAdmin,
   useAllPDFs,
+  useGetDeviceCount,
 } from "../hooks/useQueries";
 
 function parseInlineError(err: unknown): string {
@@ -89,13 +90,15 @@ function AdminPanelContent() {
   const { data: allFaculty = [] } = useAllFacultyAdmin();
   const { data: pdfs = [] } = useAllPDFs();
   const { data: departments = [] } = useAllDepartments();
+  const { data: deviceCount = 0 } = useGetDeviceCount();
   const addFaculty = useAddFaculty();
 
   const activeFacultyCount = (allFaculty as Faculty[]).filter(
     (f) => f.active,
   ).length;
+  const activePlanName = localStorage.getItem("eduboard_plan") || "basic";
   const currentPlan =
-    PLAN_TIERS.find((p) => p.name === "basic") ?? PLAN_TIERS[0];
+    PLAN_TIERS.find((p) => p.name === activePlanName) ?? PLAN_TIERS[0];
   const isPdfLimitReached = pdfs.length >= currentPlan.maxPdfs;
 
   const handleLockSignOut = () => {
@@ -375,6 +378,7 @@ function AdminPanelContent() {
             <SubscriptionSection
               facultyCount={activeFacultyCount}
               pdfCount={pdfs.length}
+              deviceCount={Number(deviceCount)}
             />
           </TabsContent>
 

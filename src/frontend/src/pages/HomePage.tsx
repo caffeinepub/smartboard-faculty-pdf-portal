@@ -49,7 +49,7 @@ export default function HomePage() {
         <div className="container mx-auto max-w-4xl text-center space-y-6">
           <div className="flex items-center justify-center mb-4">
             <img
-              src="/assets/generated/rs-logo-icon-512.dim_512x512.png"
+              src="/assets/uploads/RS-logo-2-1.png"
               alt="RS Logo"
               className="h-28 w-28 object-contain rounded-2xl shadow-lg"
             />

@@ -109,7 +109,7 @@ function getSelectedPlan(): {
   } catch {
     // ignore
   }
-  return { planName: "basic", billingCycle: "monthly" };
+  return { planName: "basic", billingCycle: "yearly" };
 }
 
 function getLicenseId(): string {
@@ -476,7 +476,7 @@ function LicensesTab() {
   const [showCreate, setShowCreate] = useState(false);
   const [newPlanTier, setNewPlanTier] = useState<LicensePlanTier>("basic");
   const [newBillingCycle, setNewBillingCycle] =
-    useState<BillingCycle>("monthly");
+    useState<BillingCycle>("yearly");
   const [newAdminName, setNewAdminName] = useState("");
 
   const handleCreate = () => {
@@ -689,19 +689,19 @@ function LicensesTab() {
                     value="basic"
                     className="text-white hover:bg-slate-700"
                   >
-                    Basic (30 faculty, 500 PDFs, 2 licenses)
+                    Basic (30 faculty, 500 PDFs, 30 devices)
                   </SelectItem>
                   <SelectItem
                     value="premium"
                     className="text-white hover:bg-slate-700"
                   >
-                    Premium (100 faculty, 2000 PDFs, 4 licenses)
+                    Premium (100 faculty, 2000 PDFs, 60 devices)
                   </SelectItem>
                   <SelectItem
                     value="diamond"
                     className="text-white hover:bg-slate-700"
                   >
-                    Diamond (500 faculty, 5000 PDFs, 6 licenses)
+                    Diamond (500 faculty, 5000 PDFs, 100 devices)
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -716,24 +716,6 @@ function LicensesTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
-                  <SelectItem
-                    value="monthly"
-                    className="text-white hover:bg-slate-700"
-                  >
-                    Monthly
-                  </SelectItem>
-                  <SelectItem
-                    value="quarterly"
-                    className="text-white hover:bg-slate-700"
-                  >
-                    Quarterly
-                  </SelectItem>
-                  <SelectItem
-                    value="halfYearly"
-                    className="text-white hover:bg-slate-700"
-                  >
-                    Half-Yearly
-                  </SelectItem>
                   <SelectItem
                     value="yearly"
                     className="text-white hover:bg-slate-700"

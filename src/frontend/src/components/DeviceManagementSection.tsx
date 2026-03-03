@@ -31,17 +31,17 @@ import { Loader2, Monitor, Trash2 } from "lucide-react";
 import React from "react";
 import {
   type DeviceRecord,
+  getDeviceLimitForPlan,
   useGetDeviceCount,
   useGetDevices,
   useRemoveDevice,
 } from "../hooks/useQueries";
 
-const DEVICE_LIMIT = 10;
-
 export default function DeviceManagementSection() {
   const { data: devices = [], isLoading: devicesLoading } = useGetDevices();
   const { data: deviceCount = 0 } = useGetDeviceCount();
   const removeDevice = useRemoveDevice();
+  const deviceLimit = getDeviceLimitForPlan();
 
   const handleRemove = async (fingerprint: string) => {
     try {
@@ -51,10 +51,7 @@ export default function DeviceManagementSection() {
     }
   };
 
-  const usagePercent = Math.min(
-    (Number(deviceCount) / DEVICE_LIMIT) * 100,
-    100,
-  );
+  const usagePercent = Math.min((Number(deviceCount) / deviceLimit) * 100, 100);
 
   return (
     <Card className="border-border">
@@ -64,7 +61,8 @@ export default function DeviceManagementSection() {
           <CardTitle>Device Management</CardTitle>
         </div>
         <CardDescription>
-          Manage registered devices. Maximum {DEVICE_LIMIT} devices allowed.
+          Manage registered devices. Maximum {deviceLimit} devices allowed on
+          your current plan.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -72,11 +70,11 @@ export default function DeviceManagementSection() {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Device Usage</span>
             <span className="font-medium">
-              {Number(deviceCount)}/{DEVICE_LIMIT}
+              {Number(deviceCount)}/{deviceLimit}
             </span>
           </div>
           <Progress value={usagePercent} className="h-2" />
-          {Number(deviceCount) >= DEVICE_LIMIT && (
+          {Number(deviceCount) >= deviceLimit && (
             <Badge variant="destructive" className="text-xs">
               Device limit reached
             </Badge>

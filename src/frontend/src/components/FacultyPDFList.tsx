@@ -1,15 +1,25 @@
-import React from 'react';
-import { FileText, CheckCircle2, Clock, ChevronRight, Loader2, BookOpen } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
-import { Card, CardContent } from '@/components/ui/card';
-import { usePDFsByFaculty } from '@/hooks/useQueries';
+import { Card, CardContent } from "@/components/ui/card";
+import { usePDFsByFaculty } from "@/hooks/useQueries";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  FileText,
+  Loader2,
+} from "lucide-react";
+import React from "react";
 
 interface FacultyPDFListProps {
   facultyId: number;
   facultyName: string;
 }
 
-export default function FacultyPDFList({ facultyId, facultyName }: FacultyPDFListProps) {
+export default function FacultyPDFList({
+  facultyId,
+  facultyName,
+}: FacultyPDFListProps) {
   const navigate = useNavigate();
   const { data: pdfs, isLoading, error } = usePDFsByFaculty(facultyId);
 
@@ -44,7 +54,8 @@ export default function FacultyPDFList({ facultyId, facultyName }: FacultyPDFLis
   return (
     <div className="space-y-3">
       <p className="text-muted-foreground text-sm font-medium">
-        {pdfs.length} PDF{pdfs.length !== 1 ? 's' : ''} assigned to {facultyName}
+        {pdfs.length} PDF{pdfs.length !== 1 ? "s" : ""} assigned to{" "}
+        {facultyName}
       </p>
       {pdfs.map((pdf) => (
         <Card
@@ -52,7 +63,7 @@ export default function FacultyPDFList({ facultyId, facultyName }: FacultyPDFLis
           className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/40 group"
           onClick={() =>
             navigate({
-              to: '/teach/$pdfId/$facultyId',
+              to: "/teach/$pdfId/$facultyId",
               params: {
                 pdfId: pdf.id.toString(),
                 facultyId: facultyId.toString(),
@@ -67,17 +78,23 @@ export default function FacultyPDFList({ facultyId, facultyName }: FacultyPDFLis
                   <FileText className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-foreground truncate">{pdf.title}</p>
+                  <p className="font-semibold text-foreground truncate">
+                    {pdf.title}
+                  </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {pdf.taught ? (
                       <>
                         <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                        <span className="text-xs text-success font-medium">Taught</span>
+                        <span className="text-xs text-success font-medium">
+                          Taught
+                        </span>
                       </>
                     ) : (
                       <>
                         <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Not yet taught</span>
+                        <span className="text-xs text-muted-foreground">
+                          Not yet taught
+                        </span>
                       </>
                     )}
                   </div>

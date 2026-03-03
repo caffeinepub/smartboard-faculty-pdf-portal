@@ -1,15 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Lock, Eye, EyeOff, ShieldCheck, Loader2, KeyRound, CheckCircle2, UserPlus, LogIn } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { verifyAdminCredentials, hasAdminCredentialsSet, setAdminCredentialsLocal } from '../hooks/useQueries';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Lock,
+  LogIn,
+  ShieldCheck,
+  UserPlus,
+} from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  hasAdminCredentialsSet,
+  setAdminCredentialsLocal,
+  verifyAdminCredentials,
+} from "../hooks/useQueries";
 
-export const LOCK_EVENT = 'admin-lock';
+export const LOCK_EVENT = "admin-lock";
 
-const SESSION_KEY = 'admin_authenticated';
+const SESSION_KEY = "admin_authenticated";
+const PERSIST_KEY = "admin_session_persist";
 
-type GateView = 'landing' | 'login' | 'create';
+type GateView = "landing" | "login" | "create";
 
 interface AdminPasscodeGateProps {
   children: React.ReactNode;
@@ -17,10 +33,13 @@ interface AdminPasscodeGateProps {
 
 // ─── First-time Setup Form ────────────────────────────────────────────────────
 
-function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack?: () => void }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+function FirstTimeSetup({
+  onComplete,
+  onBack,
+}: { onComplete: () => void; onBack?: () => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -30,15 +49,15 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
     setError(null);
 
     if (!username.trim()) {
-      setError('Username cannot be empty.');
+      setError("Username cannot be empty.");
       return;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError("Password must be at least 6 characters.");
       return;
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       return;
     }
 
@@ -59,9 +78,12 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <KeyRound className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold font-display text-foreground">Set Up Admin Access</h1>
+          <h1 className="text-2xl font-bold font-display text-foreground">
+            Set Up Admin Access
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Create your admin credentials to secure the portal. You will use these to log in going forward.
+            Create your admin credentials to secure the portal. You will use
+            these to log in going forward.
           </p>
         </div>
 
@@ -73,7 +95,10 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
               id="setup-username"
               type="text"
               value={username}
-              onChange={(e) => { setUsername(e.target.value); if (error) setError(null); }}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="Choose a username"
               disabled={isSaving}
               autoComplete="username"
@@ -85,9 +110,12 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
             <div className="relative">
               <Input
                 id="setup-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); if (error) setError(null); }}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="Minimum 6 characters"
                 disabled={isSaving}
                 autoComplete="new-password"
@@ -99,7 +127,11 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>
@@ -110,7 +142,10 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
               id="setup-confirm"
               type="password"
               value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); if (error) setError(null); }}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="Re-enter your password"
               disabled={isSaving}
               autoComplete="new-password"
@@ -144,7 +179,11 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
         </form>
 
         {onBack && (
-          <Button variant="ghost" className="w-full text-muted-foreground" onClick={onBack}>
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground"
+            onClick={onBack}
+          >
             Back
           </Button>
         )}
@@ -155,7 +194,10 @@ function FirstTimeSetup({ onComplete, onBack }: { onComplete: () => void; onBack
 
 // ─── Landing Screen (always shown first) ─────────────────────────────────────
 
-function AdminLandingScreen({ onLogin, onCreate }: { onLogin: () => void; onCreate: () => void }) {
+function AdminLandingScreen({
+  onLogin,
+  onCreate,
+}: { onLogin: () => void; onCreate: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-8">
@@ -164,7 +206,9 @@ function AdminLandingScreen({ onLogin, onCreate }: { onLogin: () => void; onCrea
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <ShieldCheck className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold font-display text-foreground">Admin Portal</h1>
+          <h1 className="text-2xl font-bold font-display text-foreground">
+            Admin Portal
+          </h1>
           <p className="text-sm text-muted-foreground">
             Choose an option to continue.
           </p>
@@ -172,10 +216,7 @@ function AdminLandingScreen({ onLogin, onCreate }: { onLogin: () => void; onCrea
 
         {/* Two Options */}
         <div className="space-y-3">
-          <Button
-            className="w-full h-14 text-base gap-3"
-            onClick={onLogin}
-          >
+          <Button className="w-full h-14 text-base gap-3" onClick={onLogin}>
             <LogIn className="h-5 w-5" />
             Login as Admin
           </Button>
@@ -202,8 +243,8 @@ function LoginForm({
   onSuccess: () => void;
   onBack: () => void;
 }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -215,13 +256,13 @@ function LoginForm({
     try {
       const isValid = verifyAdminCredentials(username, password);
       if (isValid) {
-        sessionStorage.setItem(SESSION_KEY, 'true');
         onSuccess();
       } else {
-        setError('Invalid username or password. Please try again.');
+        setError("Invalid username or password. Please try again.");
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Verification failed';
+      const message =
+        err instanceof Error ? err.message : "Verification failed";
       setError(`Login error: ${message}`);
     } finally {
       setIsVerifying(false);
@@ -235,8 +276,12 @@ function LoginForm({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <LogIn className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold font-display text-foreground">Admin Login</h1>
-          <p className="text-sm text-muted-foreground">Enter your admin credentials to continue.</p>
+          <h1 className="text-2xl font-bold font-display text-foreground">
+            Admin Login
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your admin credentials to continue.
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -246,7 +291,10 @@ function LoginForm({
               id="admin-username"
               type="text"
               value={username}
-              onChange={(e) => { setUsername(e.target.value); if (error) setError(null); }}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="Enter username"
               disabled={isVerifying}
               autoComplete="username"
@@ -257,9 +305,12 @@ function LoginForm({
             <div className="relative">
               <Input
                 id="admin-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); if (error) setError(null); }}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="Enter password"
                 disabled={isVerifying}
                 autoComplete="current-password"
@@ -271,7 +322,11 @@ function LoginForm({
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>
@@ -283,16 +338,30 @@ function LoginForm({
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isVerifying || !username || !password}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isVerifying || !username || !password}
+          >
             {isVerifying ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verifying...</>
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Verifying...
+              </>
             ) : (
-              <><Lock className="mr-2 h-4 w-4" />Sign In</>
+              <>
+                <Lock className="mr-2 h-4 w-4" />
+                Sign In
+              </>
             )}
           </Button>
         </form>
 
-        <Button variant="ghost" className="w-full text-muted-foreground" onClick={onBack}>
+        <Button
+          variant="ghost"
+          className="w-full text-muted-foreground"
+          onClick={onBack}
+        >
           Back
         </Button>
       </div>
@@ -302,15 +371,21 @@ function LoginForm({
 
 // ─── Main Gate ────────────────────────────────────────────────────────────────
 
-export default function AdminPasscodeGate({ children }: AdminPasscodeGateProps) {
+export default function AdminPasscodeGate({
+  children,
+}: AdminPasscodeGateProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [credentialsExist, setCredentialsExist] = useState<boolean | null>(null);
-  const [view, setView] = useState<GateView>('landing');
+  const [credentialsExist, setCredentialsExist] = useState<boolean | null>(
+    null,
+  );
+  const [view, setView] = useState<GateView>("landing");
 
   // Check session and credential existence on mount
+  // Check both sessionStorage (tab-level) and localStorage (persistent across tabs/restarts)
   useEffect(() => {
-    const stored = sessionStorage.getItem(SESSION_KEY);
-    if (stored === 'true') {
+    const sessionStored = sessionStorage.getItem(SESSION_KEY);
+    const persistStored = localStorage.getItem(PERSIST_KEY);
+    if (sessionStored === "true" || persistStored === "true") {
       setIsAuthenticated(true);
     }
     setCredentialsExist(hasAdminCredentialsSet());
@@ -319,8 +394,9 @@ export default function AdminPasscodeGate({ children }: AdminPasscodeGateProps) 
   // Listen for lock event
   const handleLock = useCallback(() => {
     sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(PERSIST_KEY);
     setIsAuthenticated(false);
-    setView('landing');
+    setView("landing");
   }, []);
 
   useEffect(() => {
@@ -342,20 +418,24 @@ export default function AdminPasscodeGate({ children }: AdminPasscodeGateProps) 
   }
 
   // Always show landing screen with two options
-  if (view === 'landing') {
+  if (view === "landing") {
     return (
       <AdminLandingScreen
-        onLogin={() => setView('login')}
-        onCreate={() => setView('create')}
+        onLogin={() => setView("login")}
+        onCreate={() => setView("create")}
       />
     );
   }
 
-  if (view === 'login') {
+  if (view === "login") {
     return (
       <LoginForm
-        onSuccess={() => setIsAuthenticated(true)}
-        onBack={() => setView('landing')}
+        onSuccess={() => {
+          sessionStorage.setItem(SESSION_KEY, "true");
+          localStorage.setItem(PERSIST_KEY, "true");
+          setIsAuthenticated(true);
+        }}
+        onBack={() => setView("landing")}
       />
     );
   }
@@ -365,10 +445,11 @@ export default function AdminPasscodeGate({ children }: AdminPasscodeGateProps) 
     <FirstTimeSetup
       onComplete={() => {
         setCredentialsExist(true);
-        sessionStorage.setItem(SESSION_KEY, 'true');
+        sessionStorage.setItem(SESSION_KEY, "true");
+        localStorage.setItem(PERSIST_KEY, "true");
         setIsAuthenticated(true);
       }}
-      onBack={() => setView('landing')}
+      onBack={() => setView("landing")}
     />
   );
 }

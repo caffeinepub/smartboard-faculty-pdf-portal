@@ -306,11 +306,14 @@ actor {
   };
 
   public query ({ caller }) func getActiveSubscriptionPlan() : async SubscriptionPlan {
-    let plan = switch (currentPlan, caller) {
-      case (?activePlan, _) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view subscription plans");
+    };
+    let plan = switch (currentPlan) {
+      case (?activePlan) {
         activePlan;
       };
-      case (null, _) {
+      case (null) {
         getDefaultPlan();
       };
     };
@@ -331,11 +334,14 @@ actor {
   };
 
   public query ({ caller }) func getCurrentSubscriptionLimits() : async { maxFaculty : Nat; maxPdfLimit : Nat; maxLicenses : Nat } {
-    let plan = switch (currentPlan, caller) {
-      case (?activePlan, _) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view subscription limits");
+    };
+    let plan = switch (currentPlan) {
+      case (?activePlan) {
         activePlan;
       };
-      case (null, _) {
+      case (null) {
         getDefaultPlan();
       };
     };
@@ -348,4 +354,3 @@ actor {
     };
   };
 };
-

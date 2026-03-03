@@ -1,34 +1,35 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle2, Loader2, KeyRound } from 'lucide-react';
-import { useSetAdminCredentials } from '../hooks/useQueries';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
+import type React from "react";
+import { useState } from "react";
+import { useSetAdminCredentials } from "../hooks/useQueries";
 
 export default function ChangeAdminCredentialsForm() {
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const setCredentialsMutation = useSetAdminCredentials();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     if (!newUsername.trim()) {
-      setError('Username cannot be empty.');
+      setError("Username cannot be empty.");
       return;
     }
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError("Password must be at least 6 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       return;
     }
 
@@ -38,13 +39,16 @@ export default function ChangeAdminCredentialsForm() {
         password: newPassword,
       });
 
-      setSuccess('Credentials updated successfully!');
-      setNewUsername('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setTimeout(() => setSuccess(''), 4000);
+      setSuccess("Credentials updated successfully!");
+      setNewUsername("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setSuccess(""), 4000);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An error occurred. Please try again.";
       setError(message);
     }
   };
@@ -127,7 +131,7 @@ export default function ChangeAdminCredentialsForm() {
             Updating...
           </>
         ) : (
-          'Update Credentials'
+          "Update Credentials"
         )}
       </Button>
     </form>

@@ -1,39 +1,45 @@
-import React, { useRef } from 'react';
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
-  Pen,
-  Highlighter,
-  Type,
-  Eraser,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  ArrowLeft,
+  Circle,
+  Eraser,
+  Highlighter,
+  Image as ImageIcon,
+  Minus as LineIcon,
   Minus,
+  PaintBucket,
+  Pen,
   Plus,
   Square,
-  Circle,
   Triangle,
-  ArrowUpRight,
-  Minus as LineIcon,
-  Image as ImageIcon,
-  PaintBucket,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
+  Type,
+} from "lucide-react";
+import type React from "react";
+import { useRef } from "react";
 
 export type AnnotationTool =
-  | 'draw'
-  | 'highlight'
-  | 'text'
-  | 'eraser'
-  | 'rectangle'
-  | 'circle'
-  | 'triangle'
-  | 'arrow'
-  | 'line'
-  | 'image'
-  | 'backgroundHighlight';
+  | "draw"
+  | "highlight"
+  | "text"
+  | "eraser"
+  | "rectangle"
+  | "circle"
+  | "triangle"
+  | "arrow"
+  | "line"
+  | "image"
+  | "backgroundHighlight";
 
 interface AnnotationToolbarProps {
   activeTool: AnnotationTool;
@@ -55,43 +61,55 @@ interface AnnotationToolbarProps {
   onImageSelected: (dataUrl: string) => void;
 }
 
-const DRAW_TOOLS: { id: AnnotationTool; icon: React.ElementType; label: string }[] = [
-  { id: 'draw', icon: Pen, label: 'Freehand Draw' },
-  { id: 'highlight', icon: Highlighter, label: 'Highlighter' },
-  { id: 'text', icon: Type, label: 'Text Note' },
-  { id: 'eraser', icon: Eraser, label: 'Eraser' },
+const DRAW_TOOLS: {
+  id: AnnotationTool;
+  icon: React.ElementType;
+  label: string;
+}[] = [
+  { id: "draw", icon: Pen, label: "Freehand Draw" },
+  { id: "highlight", icon: Highlighter, label: "Highlighter" },
+  { id: "text", icon: Type, label: "Text Note" },
+  { id: "eraser", icon: Eraser, label: "Eraser" },
 ];
 
-const SHAPE_TOOLS: { id: AnnotationTool; icon: React.ElementType; label: string }[] = [
-  { id: 'rectangle', icon: Square, label: 'Rectangle' },
-  { id: 'circle', icon: Circle, label: 'Circle' },
-  { id: 'triangle', icon: Triangle, label: 'Triangle' },
-  { id: 'arrow', icon: ArrowUpRight, label: 'Arrow' },
-  { id: 'line', icon: LineIcon, label: 'Straight Line' },
-  { id: 'backgroundHighlight', icon: PaintBucket, label: 'Background Highlight' },
-  { id: 'image', icon: ImageIcon, label: 'Insert Image' },
+const SHAPE_TOOLS: {
+  id: AnnotationTool;
+  icon: React.ElementType;
+  label: string;
+}[] = [
+  { id: "rectangle", icon: Square, label: "Rectangle" },
+  { id: "circle", icon: Circle, label: "Circle" },
+  { id: "triangle", icon: Triangle, label: "Triangle" },
+  { id: "arrow", icon: ArrowUpRight, label: "Arrow" },
+  { id: "line", icon: LineIcon, label: "Straight Line" },
+  {
+    id: "backgroundHighlight",
+    icon: PaintBucket,
+    label: "Background Highlight",
+  },
+  { id: "image", icon: ImageIcon, label: "Insert Image" },
 ];
 
 const STROKE_COLORS = [
-  '#1a2744',
-  '#dc2626',
-  '#2563eb',
-  '#16a34a',
-  '#d97706',
-  '#7c3aed',
-  '#db2777',
-  '#000000',
-  '#ffffff',
+  "#1a2744",
+  "#dc2626",
+  "#2563eb",
+  "#16a34a",
+  "#d97706",
+  "#7c3aed",
+  "#db2777",
+  "#000000",
+  "#ffffff",
 ];
 
 const BG_COLORS = [
-  '#fef08a', // yellow
-  '#bbf7d0', // green
-  '#bfdbfe', // blue
-  '#fecaca', // red
-  '#e9d5ff', // purple
-  '#fed7aa', // orange
-  '#f0fdf4', // light green
+  "#fef08a", // yellow
+  "#bbf7d0", // green
+  "#bfdbfe", // blue
+  "#fecaca", // red
+  "#e9d5ff", // purple
+  "#fed7aa", // orange
+  "#f0fdf4", // light green
 ];
 
 export default function AnnotationToolbar({
@@ -116,7 +134,7 @@ export default function AnnotationToolbar({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleToolClick = (tool: AnnotationTool) => {
-    if (tool === 'image') {
+    if (tool === "image") {
       fileInputRef.current?.click();
     } else {
       onToolChange(tool);
@@ -131,16 +149,16 @@ export default function AnnotationToolbar({
       const dataUrl = ev.target?.result as string;
       if (dataUrl) {
         onImageSelected(dataUrl);
-        onToolChange('image');
+        onToolChange("image");
       }
     };
     reader.readAsDataURL(file);
     // Reset so same file can be selected again
-    e.target.value = '';
+    e.target.value = "";
   };
 
-  const isColorDisabled = activeTool === 'eraser';
-  const showFillColor = activeTool === 'backgroundHighlight';
+  const isColorDisabled = activeTool === "eraser";
+  const _showFillColor = activeTool === "backgroundHighlight";
 
   return (
     <TooltipProvider>
@@ -148,7 +166,12 @@ export default function AnnotationToolbar({
         {/* Back Button */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onBack} className="touch-target">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBack}
+              className="touch-target"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
@@ -163,7 +186,7 @@ export default function AnnotationToolbar({
             <Tooltip key={id}>
               <TooltipTrigger asChild>
                 <Button
-                  variant={activeTool === id ? 'default' : 'ghost'}
+                  variant={activeTool === id ? "default" : "ghost"}
                   size="icon"
                   onClick={() => handleToolClick(id)}
                   className="touch-target"
@@ -184,7 +207,7 @@ export default function AnnotationToolbar({
             <Tooltip key={id}>
               <TooltipTrigger asChild>
                 <Button
-                  variant={activeTool === id ? 'default' : 'ghost'}
+                  variant={activeTool === id ? "default" : "ghost"}
                   size="icon"
                   onClick={() => handleToolClick(id)}
                   className="touch-target"
@@ -217,14 +240,16 @@ export default function AnnotationToolbar({
                 size="icon"
                 onClick={() => onStrokeSizeChange(Math.max(1, strokeSize - 2))}
                 className="touch-target"
-                disabled={activeTool === 'eraser' || activeTool === 'text'}
+                disabled={activeTool === "eraser" || activeTool === "text"}
               >
                 <Minus className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Decrease size</TooltipContent>
           </Tooltip>
-          <span className="text-sm font-mono w-6 text-center">{strokeSize}</span>
+          <span className="text-sm font-mono w-6 text-center">
+            {strokeSize}
+          </span>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -232,7 +257,7 @@ export default function AnnotationToolbar({
                 size="icon"
                 onClick={() => onStrokeSizeChange(Math.min(40, strokeSize + 2))}
                 className="touch-target"
-                disabled={activeTool === 'eraser' || activeTool === 'text'}
+                disabled={activeTool === "eraser" || activeTool === "text"}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -245,13 +270,18 @@ export default function AnnotationToolbar({
 
         {/* Stroke Color Picker */}
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5 hidden sm:inline">Color:</span>
+          <span className="text-xs text-muted-foreground mr-0.5 hidden sm:inline">
+            Color:
+          </span>
           {STROKE_COLORS.map((color) => (
             <button
+              type="button"
               key={color}
               onClick={() => onStrokeColorChange(color)}
               className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 flex-shrink-0 ${
-                strokeColor === color ? 'border-foreground scale-110' : 'border-muted'
+                strokeColor === color
+                  ? "border-foreground scale-110"
+                  : "border-muted"
               }`}
               style={{ backgroundColor: color }}
               title={color}
@@ -263,7 +293,7 @@ export default function AnnotationToolbar({
             <TooltipTrigger asChild>
               <label
                 className={`w-5 h-5 rounded-full border-2 cursor-pointer overflow-hidden flex-shrink-0 transition-transform hover:scale-110 ${
-                  isColorDisabled ? 'opacity-40 pointer-events-none' : ''
+                  isColorDisabled ? "opacity-40 pointer-events-none" : ""
                 } border-muted`}
                 title="Custom color"
               >
@@ -277,7 +307,8 @@ export default function AnnotationToolbar({
                 <div
                   className="w-full h-full rounded-full"
                   style={{
-                    background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)',
+                    background:
+                      "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)",
                   }}
                 />
               </label>
@@ -290,13 +321,18 @@ export default function AnnotationToolbar({
 
         {/* Background / Fill Color Picker */}
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-0.5 hidden sm:inline">BG:</span>
+          <span className="text-xs text-muted-foreground mr-0.5 hidden sm:inline">
+            BG:
+          </span>
           {BG_COLORS.map((color) => (
             <button
+              type="button"
               key={color}
               onClick={() => onFillColorChange(color)}
               className={`w-5 h-5 rounded border-2 transition-transform hover:scale-110 flex-shrink-0 ${
-                fillColor === color ? 'border-foreground scale-110' : 'border-muted'
+                fillColor === color
+                  ? "border-foreground scale-110"
+                  : "border-muted"
               }`}
               style={{ backgroundColor: color }}
               title={`Background: ${color}`}
@@ -318,7 +354,8 @@ export default function AnnotationToolbar({
                 <div
                   className="w-full h-full rounded"
                   style={{
-                    background: 'conic-gradient(#fef08a, #bbf7d0, #bfdbfe, #fecaca, #e9d5ff, #fef08a)',
+                    background:
+                      "conic-gradient(#fef08a, #bbf7d0, #bfdbfe, #fecaca, #e9d5ff, #fef08a)",
                   }}
                 />
               </label>
@@ -346,7 +383,7 @@ export default function AnnotationToolbar({
             <TooltipContent>Previous Page</TooltipContent>
           </Tooltip>
           <span className="text-sm font-semibold min-w-[70px] text-center">
-            {currentPage} / {totalPages || '?'}
+            {currentPage} / {totalPages || "?"}
           </span>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -368,11 +405,15 @@ export default function AnnotationToolbar({
           <Button
             onClick={onMarkAsTaught}
             disabled={isMarkingTaught || isTaught}
-            variant={isTaught ? 'secondary' : 'default'}
+            variant={isTaught ? "secondary" : "default"}
             className="h-11 px-4 font-semibold text-base"
           >
             <CheckCircle2 className="h-5 w-5 mr-2" />
-            {isTaught ? 'Taught' : isMarkingTaught ? 'Saving...' : 'Mark as Taught'}
+            {isTaught
+              ? "Taught"
+              : isMarkingTaught
+                ? "Saving..."
+                : "Mark as Taught"}
           </Button>
         </div>
       </div>

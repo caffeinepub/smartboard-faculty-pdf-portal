@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
@@ -13,7 +13,7 @@ export function usePWAInstall() {
 
   useEffect(() => {
     // Check if already running as PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
       return;
     }
@@ -24,16 +24,16 @@ export function usePWAInstall() {
       setIsInstallable(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener("beforeinstallprompt", handler);
 
-    window.addEventListener('appinstalled', () => {
+    window.addEventListener("appinstalled", () => {
       setIsInstalled(true);
       setIsInstallable(false);
       deferredPrompt = null;
     });
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
 
@@ -41,7 +41,7 @@ export function usePWAInstall() {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
+    if (outcome === "accepted") {
       setIsInstallable(false);
     }
     deferredPrompt = null;
@@ -51,15 +51,15 @@ export function usePWAInstall() {
 }
 
 export function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register('/service-worker.js')
+        .register("/service-worker.js")
         .then((reg) => {
-          console.log('[SW] Registered:', reg.scope);
+          console.log("[SW] Registered:", reg.scope);
         })
         .catch((err) => {
-          console.warn('[SW] Registration failed:', err);
+          console.warn("[SW] Registration failed:", err);
         });
     });
   }

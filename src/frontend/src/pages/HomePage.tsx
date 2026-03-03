@@ -1,8 +1,16 @@
-import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { LayoutDashboard, GraduationCap, BookOpen, CheckCircle2, Pen, Users, Terminal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  BookOpen,
+  CheckCircle2,
+  GraduationCap,
+  LayoutDashboard,
+  Pen,
+  Terminal,
+  Users,
+} from "lucide-react";
+import React from "react";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -10,23 +18,27 @@ export default function HomePage() {
   const features = [
     {
       icon: Users,
-      title: 'Faculty Management',
-      description: 'Add faculty members and assign teaching materials to specific instructors.',
+      title: "Faculty Management",
+      description:
+        "Add faculty members and assign teaching materials to specific instructors.",
     },
     {
       icon: BookOpen,
-      title: 'PDF Library',
-      description: 'Upload and organize PDF teaching materials with easy assignment to faculty.',
+      title: "PDF Library",
+      description:
+        "Upload and organize PDF teaching materials with easy assignment to faculty.",
     },
     {
       icon: Pen,
-      title: 'Smart Annotations',
-      description: 'Draw, highlight, and add text notes directly on PDFs during teaching sessions.',
+      title: "Smart Annotations",
+      description:
+        "Draw, highlight, and add text notes directly on PDFs during teaching sessions.",
     },
     {
       icon: CheckCircle2,
-      title: 'Teaching Tracker',
-      description: 'Track which materials have been taught and monitor teaching progress.',
+      title: "Teaching Tracker",
+      description:
+        "Track which materials have been taught and monitor teaching progress.",
     },
   ];
 
@@ -37,23 +49,23 @@ export default function HomePage() {
         <div className="container mx-auto max-w-4xl text-center space-y-6">
           <div className="flex items-center justify-center mb-4">
             <img
-              src="/assets/uploads/image-5-1.png"
+              src="/assets/generated/rs-logo-icon-512.dim_512x512.png"
               alt="RS Logo"
-              className="h-28 w-28 object-contain rounded-2xl shadow-lg bg-white p-2"
+              className="h-28 w-28 object-contain rounded-2xl shadow-lg"
             />
           </div>
           <h1 className="font-display text-5xl font-bold leading-tight">
             Smart Board Portal
           </h1>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed">
-            A powerful teaching platform for smart boards. Upload PDFs, annotate during lessons,
-            and track your teaching progress — all in one place.
+            A powerful teaching platform for smart boards. Upload PDFs, annotate
+            during lessons, and track your teaching progress — all in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button
               size="lg"
               className="h-14 px-8 text-lg font-semibold bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => navigate({ to: '/admin' })}
+              onClick={() => navigate({ to: "/admin" })}
             >
               <LayoutDashboard className="h-5 w-5 mr-2" />
               Admin Panel
@@ -62,7 +74,7 @@ export default function HomePage() {
               size="lg"
               variant="outline"
               className="h-14 px-8 text-lg font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => navigate({ to: '/faculty' })}
+              onClick={() => navigate({ to: "/faculty" })}
             >
               <GraduationCap className="h-5 w-5 mr-2" />
               Faculty Portal
@@ -71,7 +83,7 @@ export default function HomePage() {
               size="lg"
               variant="outline"
               className="h-14 px-8 text-lg font-semibold border-indigo-300/40 text-primary-foreground hover:bg-indigo-600/20"
-              onClick={() => navigate({ to: '/dev-portal' })}
+              onClick={() => navigate({ to: "/dev-portal" })}
             >
               <Terminal className="h-5 w-5 mr-2" />
               Developer Portal
@@ -79,7 +91,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
 
       {/* Features Section */}
       <section className="py-16 px-4">
@@ -89,13 +100,20 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map(({ icon: Icon, title, description }) => (
-              <Card key={title} className="shadow-card hover:shadow-elevated transition-shadow">
+              <Card
+                key={title}
+                className="shadow-card hover:shadow-elevated transition-shadow"
+              >
                 <CardContent className="p-6 space-y-3">
                   <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
                     <Icon className="h-6 w-6 text-accent" />
                   </div>
-                  <h3 className="font-semibold text-lg text-foreground">{title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+                  <h3 className="font-semibold text-lg text-foreground">
+                    {title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {description}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -106,14 +124,16 @@ export default function HomePage() {
       {/* Quick Access */}
       <section className="bg-secondary/30 py-12 px-4">
         <div className="container mx-auto max-w-2xl text-center space-y-4">
-          <h2 className="font-display text-2xl font-bold text-foreground">Ready to Start?</h2>
+          <h2 className="font-display text-2xl font-bold text-foreground">
+            Ready to Start?
+          </h2>
           <p className="text-muted-foreground">
-            Administrators can upload PDFs and manage faculty. Faculty members can access their
-            assigned materials and start teaching.
+            Administrators can upload PDFs and manage faculty. Faculty members
+            can access their assigned materials and start teaching.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button
-              onClick={() => navigate({ to: '/admin' })}
+              onClick={() => navigate({ to: "/admin" })}
               className="h-12 px-6 font-semibold"
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
@@ -121,7 +141,7 @@ export default function HomePage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate({ to: '/faculty' })}
+              onClick={() => navigate({ to: "/faculty" })}
               className="h-12 px-6 font-semibold"
             >
               <GraduationCap className="h-4 w-4 mr-2" />
@@ -129,7 +149,7 @@ export default function HomePage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate({ to: '/dev-portal' })}
+              onClick={() => navigate({ to: "/dev-portal" })}
               className="h-12 px-6 font-semibold border-indigo-300/40 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
             >
               <Terminal className="h-4 w-4 mr-2" />

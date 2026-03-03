@@ -1,5 +1,5 @@
-import React from 'react';
-import { ShieldX, MonitorX, Phone } from 'lucide-react';
+import { MonitorX, Phone, ShieldX } from "lucide-react";
+import React from "react";
 
 export default function DeviceLimitBlocker() {
   return (
@@ -34,26 +34,29 @@ export default function DeviceLimitBlocker() {
         {/* Message */}
         <div className="bg-destructive/8 border border-destructive/20 rounded-xl p-6 mb-6">
           <p className="text-foreground text-base leading-relaxed font-medium">
-            This license is already in use on{' '}
+            This license is already in use on{" "}
             <span className="text-destructive font-bold">10 devices</span>.
           </p>
           <p className="text-muted-foreground text-sm mt-2 leading-relaxed">
             The maximum number of devices allowed per license has been reached.
-            No additional devices can be registered until an existing device is removed.
+            No additional devices can be registered until an existing device is
+            removed.
           </p>
         </div>
 
         {/* Contact info */}
         <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
           <Phone className="w-4 h-4 text-accent" />
-          <span>Please contact your administrator to free up a device slot.</span>
+          <span>
+            Please contact your administrator to free up a device slot.
+          </span>
         </div>
 
         {/* License info */}
         <div className="mt-6 p-3 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
             <span className="font-semibold">EduBoard Smart Faculty Portal</span>
-            {' — '}License limit: 10 devices per license
+            {" — "}License limit: 10 devices per license
           </p>
         </div>
       </div>

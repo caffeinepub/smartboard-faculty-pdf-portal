@@ -3,36 +3,36 @@
  * Combines browser/device characteristics with a persisted UUID.
  */
 
-const FINGERPRINT_KEY = 'eduboard_device_fp';
+const FINGERPRINT_KEY = "eduboard_device_fp";
 
 function generateCanvasHash(): string {
   try {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return 'no-canvas';
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillStyle = '#f60';
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "no-canvas";
+    ctx.textBaseline = "top";
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "#f60";
     ctx.fillRect(125, 1, 62, 20);
-    ctx.fillStyle = '#069';
-    ctx.fillText('EduBoard🎓', 2, 15);
-    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-    ctx.fillText('EduBoard🎓', 4, 17);
+    ctx.fillStyle = "#069";
+    ctx.fillText("EduBoard🎓", 2, 15);
+    ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+    ctx.fillText("EduBoard🎓", 4, 17);
     return canvas.toDataURL().slice(-32);
   } catch {
-    return 'canvas-error';
+    return "canvas-error";
   }
 }
 
 function generatePersistentUUID(): string {
-  const stored = localStorage.getItem(FINGERPRINT_KEY + '_uuid');
+  const stored = localStorage.getItem(`${FINGERPRINT_KEY}_uuid`);
   if (stored) return stored;
-  const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
-  localStorage.setItem(FINGERPRINT_KEY + '_uuid', uuid);
+  localStorage.setItem(`${FINGERPRINT_KEY}_uuid`, uuid);
   return uuid;
 }
 
@@ -55,12 +55,12 @@ export function getDeviceFingerprint(): string {
     navigator.language,
     `${screen.width}x${screen.height}x${screen.colorDepth}`,
     new Date().getTimezoneOffset().toString(),
-    navigator.hardwareConcurrency?.toString() ?? 'unknown',
+    navigator.hardwareConcurrency?.toString() ?? "unknown",
     generateCanvasHash(),
     generatePersistentUUID(),
   ];
 
-  const fingerprint = hashString(components.join('|')) + '-' + generatePersistentUUID().slice(0, 8);
+  const fingerprint = `${hashString(components.join("|"))}-${generatePersistentUUID().slice(0, 8)}`;
   localStorage.setItem(FINGERPRINT_KEY, fingerprint);
   return fingerprint;
 }

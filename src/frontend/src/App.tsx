@@ -1,31 +1,34 @@
-import React from 'react';
+import DeviceLimitBlocker from "@/components/DeviceLimitBlocker";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import Layout from "@/components/Layout";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { FacultyAuthProvider } from "@/context/FacultyAuthContext";
+import { FacultyProvider } from "@/context/FacultyContext";
+import { useDeviceRegistration } from "@/hooks/useDeviceRegistration";
+import AdminPanel from "@/pages/AdminPanel";
+import DeveloperPortal from "@/pages/DeveloperPortal";
+import FacultyPortal from "@/pages/FacultyPortal";
+import HomePage from "@/pages/HomePage";
+import TeachingView from "@/pages/TeachingView";
 import {
-  createRouter,
-  createRoute,
-  createRootRoute,
-  RouterProvider,
   Outlet,
-} from '@tanstack/react-router';
-import Layout from '@/components/Layout';
-import HomePage from '@/pages/HomePage';
-import AdminPanel from '@/pages/AdminPanel';
-import FacultyPortal from '@/pages/FacultyPortal';
-import TeachingView from '@/pages/TeachingView';
-import DeveloperPortal from '@/pages/DeveloperPortal';
-import DeviceLimitBlocker from '@/components/DeviceLimitBlocker';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import PWAInstallPrompt from '@/components/PWAInstallPrompt';
-import { FacultyProvider } from '@/context/FacultyContext';
-import { useDeviceRegistration } from '@/hooks/useDeviceRegistration';
-import { Loader2 } from 'lucide-react';
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import React from "react";
 
 // Root route with layout + device registration gate
 const rootRoute = createRootRoute({
   component: () => (
     <ErrorBoundary>
-      <FacultyProvider>
-        <DeviceGate />
-      </FacultyProvider>
+      <FacultyAuthProvider>
+        <FacultyProvider>
+          <DeviceGate />
+        </FacultyProvider>
+      </FacultyAuthProvider>
     </ErrorBoundary>
   ),
 });
@@ -47,10 +50,12 @@ function DeviceGate() {
             className="h-12 w-12 rounded-xl object-contain"
             onError={(e) => {
               // Hide broken image gracefully
-              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).style.display = "none";
             }}
           />
-          <span className="font-display text-2xl font-bold text-foreground">EduBoard</span>
+          <span className="font-display text-2xl font-bold text-foreground">
+            EduBoard
+          </span>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin text-accent" />
@@ -69,7 +74,7 @@ function DeviceGate() {
 // Home route (with layout)
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: () => (
     <Layout>
       <HomePage />
@@ -80,7 +85,7 @@ const homeRoute = createRoute({
 // Admin route (with layout)
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/admin',
+  path: "/admin",
   component: () => (
     <Layout>
       <AdminPanel />
@@ -91,7 +96,7 @@ const adminRoute = createRoute({
 // Faculty route (with layout)
 const facultyRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/faculty',
+  path: "/faculty",
   component: () => (
     <Layout>
       <FacultyPortal />
@@ -102,14 +107,14 @@ const facultyRoute = createRoute({
 // Teaching view route (full screen, no layout header/footer)
 const teachingRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/teach/$pdfId/$facultyId',
+  path: "/teach/$pdfId/$facultyId",
   component: TeachingView,
 });
 
 // Developer portal route (admin only, with layout)
 const devPortalRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/dev-portal',
+  path: "/dev-portal",
   component: () => (
     <Layout>
       <DeveloperPortal />
@@ -127,7 +132,7 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({ routeTree });
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }

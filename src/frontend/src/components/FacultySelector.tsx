@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { GraduationCap, ChevronRight, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { Faculty } from '../hooks/useQueries';
+} from "@/components/ui/select";
+import { ChevronRight, GraduationCap, Loader2 } from "lucide-react";
+import React, { useState } from "react";
+import type { Faculty } from "../hooks/useQueries";
 
 interface FacultySelectorProps {
   facultyList: Faculty[];
@@ -16,8 +16,12 @@ interface FacultySelectorProps {
   onSelect: (id: number, name: string) => void;
 }
 
-export default function FacultySelector({ facultyList, isLoading, onSelect }: FacultySelectorProps) {
-  const [selectedId, setSelectedId] = useState<string>('');
+export default function FacultySelector({
+  facultyList,
+  isLoading,
+  onSelect,
+}: FacultySelectorProps) {
+  const [selectedId, setSelectedId] = useState<string>("");
 
   const handleContinue = () => {
     if (!selectedId) return;
@@ -34,7 +38,9 @@ export default function FacultySelector({ facultyList, isLoading, onSelect }: Fa
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-2">
             <GraduationCap className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Faculty Portal</h2>
+          <h2 className="font-display text-2xl font-bold text-foreground">
+            Faculty Portal
+          </h2>
           <p className="text-muted-foreground">
             Select your name to access your assigned teaching materials.
           </p>
@@ -47,14 +53,21 @@ export default function FacultySelector({ facultyList, isLoading, onSelect }: Fa
         ) : facultyList.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <p className="font-medium">No faculty members found.</p>
-            <p className="text-sm mt-1">Please ask your administrator to add faculty members.</p>
+            <p className="text-sm mt-1">
+              Please ask your administrator to add faculty members.
+            </p>
           </div>
         ) : (
           <>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">Select Your Name</label>
+              <label
+                htmlFor="faculty-select"
+                className="text-sm font-semibold text-foreground"
+              >
+                Select Your Name
+              </label>
               <Select value={selectedId} onValueChange={setSelectedId}>
-                <SelectTrigger className="h-12 text-base">
+                <SelectTrigger id="faculty-select" className="h-12 text-base">
                   <SelectValue placeholder="Choose your name..." />
                 </SelectTrigger>
                 <SelectContent>

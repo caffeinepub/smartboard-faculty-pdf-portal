@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
-import { useActor } from './useActor';
-import { getDeviceFingerprint } from '@/utils/deviceFingerprint';
+import { getDeviceFingerprint } from "@/utils/deviceFingerprint";
+import { useEffect, useRef, useState } from "react";
+import { useActor } from "./useActor";
 
 export type DeviceRegistrationStatus =
-  | 'idle'
-  | 'checking'
-  | 'allowed'
-  | 'limit-exceeded'
-  | 'error';
+  | "idle"
+  | "checking"
+  | "allowed"
+  | "limit-exceeded"
+  | "error";
 
-const LICENSE_ID_KEY = 'eduboard_license_id';
+const LICENSE_ID_KEY = "eduboard_license_id";
 
 // Maximum time (ms) to wait for device registration before allowing access
 const REGISTRATION_TIMEOUT_MS = 12000;
@@ -22,15 +22,15 @@ function getLicenseId(): string {
   const stored = localStorage.getItem(LICENSE_ID_KEY);
   if (stored) return stored;
   // Use hostname as the license identifier — stable per deployment
-  const licenseId = window.location.hostname || 'eduboard-default-license';
+  const licenseId = window.location.hostname || "eduboard-default-license";
   localStorage.setItem(LICENSE_ID_KEY, licenseId);
   return licenseId;
 }
 
 export function useDeviceRegistration() {
   const { actor, isFetching: actorFetching } = useActor();
-  const [status, setStatus] = useState<DeviceRegistrationStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [status, setStatus] = useState<DeviceRegistrationStatus>("idle");
+  const [errorMessage, _setErrorMessage] = useState<string>("");
   const hasRegistered = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -38,9 +38,11 @@ export function useDeviceRegistration() {
   useEffect(() => {
     timeoutRef.current = setTimeout(() => {
       setStatus((prev) => {
-        if (prev === 'idle' || prev === 'checking') {
-          console.warn('[DeviceRegistration] Timeout reached — allowing access as fallback');
-          return 'allowed';
+        if (prev === "idle" || prev === "checking") {
+          console.warn(
+            "[DeviceRegistration] Timeout reached — allowing access as fallback",
+          );
+          return "allowed";
         }
         return prev;
       });
@@ -60,7 +62,7 @@ export function useDeviceRegistration() {
 
     // The backend does not expose a registerDevice method in the current interface.
     // Allow access immediately and clear the safety timeout.
-    setStatus('allowed');
+    setStatus("allowed");
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -73,8 +75,8 @@ export function useDeviceRegistration() {
   return {
     status,
     errorMessage,
-    isChecking: status === 'idle' || status === 'checking',
-    isAllowed: status === 'allowed',
-    isLimitExceeded: status === 'limit-exceeded',
+    isChecking: status === "idle" || status === "checking",
+    isAllowed: status === "allowed",
+    isLimitExceeded: status === "limit-exceeded",
   };
 }

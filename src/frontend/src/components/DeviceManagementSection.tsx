@@ -1,16 +1,3 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +8,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Monitor, Trash2, Loader2 } from 'lucide-react';
-import { useGetDevices, useGetDeviceCount, useRemoveDevice, type DeviceRecord } from '../hooks/useQueries';
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Loader2, Monitor, Trash2 } from "lucide-react";
+import React from "react";
+import {
+  type DeviceRecord,
+  useGetDeviceCount,
+  useGetDevices,
+  useRemoveDevice,
+} from "../hooks/useQueries";
 
 const DEVICE_LIMIT = 10;
 
@@ -36,11 +47,14 @@ export default function DeviceManagementSection() {
     try {
       await removeDevice.mutateAsync(fingerprint);
     } catch (err) {
-      console.error('Failed to remove device:', err);
+      console.error("Failed to remove device:", err);
     }
   };
 
-  const usagePercent = Math.min((Number(deviceCount) / DEVICE_LIMIT) * 100, 100);
+  const usagePercent = Math.min(
+    (Number(deviceCount) / DEVICE_LIMIT) * 100,
+    100,
+  );
 
   return (
     <Card className="border-border">
@@ -112,8 +126,8 @@ export default function DeviceManagementSection() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remove Device</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to remove this device? It will need to
-                              re-register to access the portal.
+                              Are you sure you want to remove this device? It
+                              will need to re-register to access the portal.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

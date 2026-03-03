@@ -1,7 +1,8 @@
-const CACHE_NAME = 'eduboard-v1';
+const CACHE_NAME = 'smartboard-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/manifest.json',
 ];
 
 // Install: cache the app shell

@@ -3,23 +3,36 @@
   "short_name": "SmartBoard",
   "description": "Smart Faculty PDF Portal for smart boards — manage teaching materials, annotations, and faculty assignments.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "landscape",
-  "background_color": "#1a1a2e",
-  "theme_color": "#d97706",
+  "background_color": "#800020",
+  "theme_color": "#800020",
   "categories": ["education", "productivity"],
   "icons": [
     {
-      "src": "/assets/generated/pwa-icon-192.dim_192x192.png",
+      "src": "/assets/generated/rs-logo-icon-192.dim_192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/assets/generated/pwa-icon-512.dim_512x512.png",
+      "src": "/assets/generated/rs-logo-icon-192.dim_192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/generated/rs-logo-icon-512.dim_512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/rs-logo-icon-512.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [],

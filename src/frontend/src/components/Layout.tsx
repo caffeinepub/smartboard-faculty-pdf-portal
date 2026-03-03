@@ -1,16 +1,16 @@
-import React from 'react';
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
-import { Settings, Lock, Heart, Terminal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { LOCK_EVENT } from './AdminPasscodeGate';
-import { DEVELOPER_LOCK_EVENT } from './DeveloperPasscodeGate';
+import { Button } from "@/components/ui/button";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Heart, Lock, Settings, Terminal } from "lucide-react";
+import type React from "react";
+import { LOCK_EVENT } from "./AdminPasscodeGate";
+import { DEVELOPER_LOCK_EVENT } from "./DeveloperPasscodeGate";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
-  const isAdminRoute = currentPath.startsWith('/admin');
-  const isDevRoute = currentPath.startsWith('/dev-portal');
+  const isAdminRoute = currentPath.startsWith("/admin");
+  const isDevRoute = currentPath.startsWith("/dev-portal");
 
   const handleLock = () => {
     window.dispatchEvent(new Event(LOCK_EVENT));
@@ -20,7 +20,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event(DEVELOPER_LOCK_EVENT));
   };
 
-  const appId = encodeURIComponent(window.location.hostname || 'eduboard-smart-portal');
+  const appId = encodeURIComponent(
+    window.location.hostname || "eduboard-smart-portal",
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,9 +32,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <img
-              src="/assets/uploads/image-5-1.png"
+              src="/assets/generated/rs-logo-icon-192.dim_192x192.png"
               alt="RS Logo"
-              className="h-10 w-10 object-contain rounded bg-white p-0.5 shadow-sm"
+              className="h-10 w-10 object-contain rounded shadow-sm"
             />
             <span className="font-display font-bold text-lg text-foreground hidden sm:block">
               Smart Board Portal
@@ -44,7 +46,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate({ to: '/faculty' })}
+              onClick={() => navigate({ to: "/faculty" })}
               className="gap-1.5 text-sm"
             >
               Faculty
@@ -52,7 +54,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate({ to: '/admin' })}
+              onClick={() => navigate({ to: "/admin" })}
               className="gap-1.5 text-sm"
             >
               <Settings className="h-4 w-4" />
@@ -61,7 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate({ to: '/dev-portal' })}
+              onClick={() => navigate({ to: "/dev-portal" })}
               className="gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
             >
               <Terminal className="h-4 w-4" />
@@ -101,17 +103,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 py-6 max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <img
-              src="/assets/uploads/image-5-1.png"
+              src="/assets/generated/rs-logo-icon-192.dim_192x192.png"
               alt="RS Logo"
-              className="h-6 w-6 object-contain rounded bg-white p-0.5"
+              className="h-6 w-6 object-contain rounded"
             />
-            <span className="font-display font-semibold text-foreground">Smart Board Portal</span>
+            <span className="font-display font-semibold text-foreground">
+              Smart Board Portal
+            </span>
             <span>© {new Date().getFullYear()}</span>
           </div>
           <p className="flex items-center gap-1">
-            Built with{' '}
-            <Heart className="h-3.5 w-3.5 text-accent fill-accent mx-0.5" />{' '}
-            using{' '}
+            Built with{" "}
+            <Heart className="h-3.5 w-3.5 text-accent fill-accent mx-0.5" />{" "}
+            using{" "}
             <a
               href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${appId}`}
               target="_blank"

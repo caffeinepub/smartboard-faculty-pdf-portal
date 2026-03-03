@@ -1,33 +1,33 @@
-import React, { useState } from 'react';
+import DeveloperPasscodeGate, {
+  DEVELOPER_LOCK_EVENT,
+} from "@/components/DeveloperPasscodeGate";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  Terminal,
-  FileText,
-  Users,
-  BookOpen,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  AlertCircle,
-  RefreshCw,
-  Monitor,
-  Crown,
-  UserCheck,
-  UserX,
-  Zap,
-  Gem,
-  Key,
-  PlusCircle,
-  Trash2,
-  XCircle,
-  ShieldAlert,
-  LogOut,
-  ShieldCheck,
-  Copy,
-  Settings,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -35,73 +35,89 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  useAllFacultyWithPdfCount,
-  useGetDevices,
-  useAllPDFs,
-  useAllLicenses,
-  useCreateLicense,
-  useRevokeLicense,
-  useDeleteLicense,
-  PLAN_TIERS,
-  getDeveloperUsername,
-  getAdminUsername,
-  hasAdminCredentialsSet,
-  setAdminCredentialsLocal,
-  clearAdminCredentials,
   type BillingCycle,
-  type LicenseKey,
-  type LicensePlanTier,
   type DeviceRecord,
   type FacultyWithPdfCount,
+  type LicenseKey,
+  type LicensePlanTier,
   type PDF,
-} from '@/hooks/useQueries';
-import DeveloperPasscodeGate, { DEVELOPER_LOCK_EVENT } from '@/components/DeveloperPasscodeGate';
-import { toast } from 'sonner';
+  PLAN_TIERS,
+  clearAdminCredentials,
+  getAdminUsername,
+  getDeveloperUsername,
+  hasAdminCredentialsSet,
+  setAdminCredentialsLocal,
+  useAllFacultyWithPdfCount,
+  useAllLicenses,
+  useAllPDFs,
+  useCreateLicense,
+  useDeleteLicense,
+  useGetDevices,
+  useRevokeLicense,
+} from "@/hooks/useQueries";
+import {
+  AlertCircle,
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  Copy,
+  Crown,
+  FileText,
+  Gem,
+  Key,
+  Loader2,
+  LogOut,
+  Monitor,
+  PlusCircle,
+  RefreshCw,
+  Settings,
+  ShieldAlert,
+  ShieldCheck,
+  Terminal,
+  Trash2,
+  UserCheck,
+  UserX,
+  Users,
+  XCircle,
+  Zap,
+} from "lucide-react";
+import type React from "react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(timestamp: number): string {
-  if (!timestamp) return '—';
-  return new Date(timestamp).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+  if (!timestamp) return "—";
+  return new Date(timestamp).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 }
 
-function getSelectedPlan(): { planName: 'basic' | 'premium' | 'diamond'; billingCycle: BillingCycle } {
+function getSelectedPlan(): {
+  planName: "basic" | "premium" | "diamond";
+  billingCycle: BillingCycle;
+} {
   try {
-    const raw = localStorage.getItem('eduboard_selected_plan');
+    const raw = localStorage.getItem("eduboard_selected_plan");
     if (raw) return JSON.parse(raw);
   } catch {
     // ignore
   }
-  return { planName: 'basic', billingCycle: 'monthly' };
+  return { planName: "basic", billingCycle: "monthly" };
 }
 
 function getLicenseId(): string {
-  return localStorage.getItem('eduboard_license_id') || window.location.hostname || 'eduboard-default-license';
+  return (
+    localStorage.getItem("eduboard_license_id") ||
+    window.location.hostname ||
+    "eduboard-default-license"
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -123,7 +139,9 @@ function StatsCard({
             <Icon className="h-5 w-5 text-indigo-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-white leading-tight">{value}</p>
+            <p className="text-2xl font-bold text-white leading-tight">
+              {value}
+            </p>
             <p className="text-xs text-slate-400">{label}</p>
           </div>
         </div>
@@ -137,7 +155,12 @@ function SectionError({ onRetry }: { onRetry: () => void }) {
     <div className="flex flex-col items-center justify-center py-12 gap-3 text-red-400">
       <AlertCircle className="h-8 w-8" />
       <p className="font-medium text-sm">Failed to load data</p>
-      <Button variant="outline" size="sm" onClick={onRetry} className="border-slate-700 text-slate-300 hover:bg-slate-700">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRetry}
+        className="border-slate-700 text-slate-300 hover:bg-slate-700"
+      >
         Try Again
       </Button>
     </div>
@@ -178,7 +201,9 @@ function SectionHeader({
         disabled={isFetching}
         className="gap-1.5 h-8 text-xs border-slate-700 text-slate-300 hover:bg-slate-700"
       >
-        <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+        <RefreshCw
+          className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
+        />
         Refresh
       </Button>
     </div>
@@ -188,11 +213,22 @@ function SectionHeader({
 // ─── Faculty Tab ──────────────────────────────────────────────────────────────
 
 function FacultyTab() {
-  const { data: facultyList = [], isLoading, isError, refetch, isFetching } = useAllFacultyWithPdfCount();
+  const {
+    data: facultyList = [],
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useAllFacultyWithPdfCount();
 
   return (
     <div>
-      <SectionHeader title="All Faculty Members" icon={Users} onRefresh={refetch} isFetching={isFetching} />
+      <SectionHeader
+        title="All Faculty Members"
+        icon={Users}
+        onRefresh={refetch}
+        isFetching={isFetching}
+      />
       {isLoading ? (
         <SectionSkeleton rows={5} />
       ) : isError ? (
@@ -210,14 +246,23 @@ function FacultyTab() {
                 <TableHead className="w-10 text-slate-400">#</TableHead>
                 <TableHead className="text-slate-400">Name</TableHead>
                 <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-center text-slate-400">PDFs Assigned</TableHead>
-                <TableHead className="text-right text-slate-400">Faculty ID</TableHead>
+                <TableHead className="text-center text-slate-400">
+                  PDFs Assigned
+                </TableHead>
+                <TableHead className="text-right text-slate-400">
+                  Faculty ID
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {facultyList.map((item: FacultyWithPdfCount, idx: number) => (
-                <TableRow key={item.faculty.id} className="border-slate-700/50 hover:bg-slate-800/40">
-                  <TableCell className="text-slate-500 text-sm font-mono">{idx + 1}</TableCell>
+                <TableRow
+                  key={item.faculty.id}
+                  className="border-slate-700/50 hover:bg-slate-800/40"
+                >
+                  <TableCell className="text-slate-500 text-sm font-mono">
+                    {idx + 1}
+                  </TableCell>
                   <TableCell className="font-medium text-slate-200">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs font-bold text-indigo-400">
@@ -233,7 +278,10 @@ function FacultyTab() {
                         Active
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-slate-500 border-slate-600 gap-1 text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-slate-500 border-slate-600 gap-1 text-xs"
+                      >
                         <UserX className="h-3 w-3" />
                         Inactive
                       </Badge>
@@ -261,11 +309,22 @@ function FacultyTab() {
 // ─── PDFs Tab ─────────────────────────────────────────────────────────────────
 
 function PDFsTab() {
-  const { data: pdfs = [], isLoading, isError, refetch, isFetching } = useAllPDFs();
+  const {
+    data: pdfs = [],
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useAllPDFs();
 
   return (
     <div>
-      <SectionHeader title="All PDFs" icon={FileText} onRefresh={refetch} isFetching={isFetching} />
+      <SectionHeader
+        title="All PDFs"
+        icon={FileText}
+        onRefresh={refetch}
+        isFetching={isFetching}
+      />
       {isLoading ? (
         <SectionSkeleton rows={5} />
       ) : isError ? (
@@ -283,14 +342,21 @@ function PDFsTab() {
                 <TableHead className="w-10 text-slate-400">#</TableHead>
                 <TableHead className="text-slate-400">Title</TableHead>
                 <TableHead className="text-slate-400">Upload Date</TableHead>
-                <TableHead className="text-center text-slate-400">Faculty Count</TableHead>
+                <TableHead className="text-center text-slate-400">
+                  Faculty Count
+                </TableHead>
                 <TableHead className="text-slate-400">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pdfs.map((pdf: PDF, idx: number) => (
-                <TableRow key={pdf.id} className="border-slate-700/50 hover:bg-slate-800/40">
-                  <TableCell className="text-slate-500 text-sm font-mono">{idx + 1}</TableCell>
+                <TableRow
+                  key={pdf.id}
+                  className="border-slate-700/50 hover:bg-slate-800/40"
+                >
+                  <TableCell className="text-slate-500 text-sm font-mono">
+                    {idx + 1}
+                  </TableCell>
                   <TableCell className="font-medium text-slate-200">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-indigo-400" />
@@ -300,7 +366,9 @@ function PDFsTab() {
                   <TableCell className="text-sm text-slate-400">
                     {formatDate(pdf.uploadDate)}
                   </TableCell>
-                  <TableCell className="text-center text-sm text-slate-300">{pdf.facultyIds.length}</TableCell>
+                  <TableCell className="text-center text-sm text-slate-300">
+                    {pdf.facultyIds.length}
+                  </TableCell>
                   <TableCell>
                     {pdf.taught ? (
                       <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 gap-1 text-xs">
@@ -308,7 +376,10 @@ function PDFsTab() {
                         Taught
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-slate-500 border-slate-600 gap-1 text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-slate-500 border-slate-600 gap-1 text-xs"
+                      >
                         <Clock className="h-3 w-3" />
                         Pending
                       </Badge>
@@ -327,11 +398,22 @@ function PDFsTab() {
 // ─── Devices Tab ──────────────────────────────────────────────────────────────
 
 function DevicesTab() {
-  const { data: devices = [], isLoading, isError, refetch, isFetching } = useGetDevices();
+  const {
+    data: devices = [],
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useGetDevices();
 
   return (
     <div>
-      <SectionHeader title="Registered Devices" icon={Monitor} onRefresh={refetch} isFetching={isFetching} />
+      <SectionHeader
+        title="Registered Devices"
+        icon={Monitor}
+        onRefresh={refetch}
+        isFetching={isFetching}
+      />
       {isLoading ? (
         <SectionSkeleton rows={3} />
       ) : isError ? (
@@ -347,15 +429,24 @@ function DevicesTab() {
             <TableHeader>
               <TableRow className="bg-slate-800/80 border-slate-700 hover:bg-slate-800/80">
                 <TableHead className="text-slate-400">#</TableHead>
-                <TableHead className="text-slate-400">Device Fingerprint</TableHead>
+                <TableHead className="text-slate-400">
+                  Device Fingerprint
+                </TableHead>
                 <TableHead className="text-slate-400">Registered At</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {devices.map((device: DeviceRecord, idx: number) => (
-                <TableRow key={device.fingerprint} className="border-slate-700/50 hover:bg-slate-800/40">
-                  <TableCell className="text-slate-500 text-sm font-mono">{idx + 1}</TableCell>
-                  <TableCell className="font-mono text-xs text-slate-300">{device.fingerprint}</TableCell>
+                <TableRow
+                  key={device.fingerprint}
+                  className="border-slate-700/50 hover:bg-slate-800/40"
+                >
+                  <TableCell className="text-slate-500 text-sm font-mono">
+                    {idx + 1}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-slate-300">
+                    {device.fingerprint}
+                  </TableCell>
                   <TableCell className="text-sm text-slate-400">
                     {formatDate(device.registeredAt)}
                   </TableCell>
@@ -372,39 +463,55 @@ function DevicesTab() {
 // ─── Licenses Tab ─────────────────────────────────────────────────────────────
 
 function LicensesTab() {
-  const { data: licenses = [], isLoading, refetch, isFetching } = useAllLicenses();
+  const {
+    data: licenses = [],
+    isLoading,
+    refetch,
+    isFetching,
+  } = useAllLicenses();
   const createLicense = useCreateLicense();
   const revokeLicense = useRevokeLicense();
   const deleteLicense = useDeleteLicense();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [newPlanTier, setNewPlanTier] = useState<LicensePlanTier>('basic');
-  const [newBillingCycle, setNewBillingCycle] = useState<BillingCycle>('monthly');
-  const [newAdminName, setNewAdminName] = useState('');
+  const [newPlanTier, setNewPlanTier] = useState<LicensePlanTier>("basic");
+  const [newBillingCycle, setNewBillingCycle] =
+    useState<BillingCycle>("monthly");
+  const [newAdminName, setNewAdminName] = useState("");
 
   const handleCreate = () => {
     createLicense.mutate(
-      { planTier: newPlanTier, billingCycle: newBillingCycle, adminName: newAdminName || undefined },
+      {
+        planTier: newPlanTier,
+        billingCycle: newBillingCycle,
+        adminName: newAdminName || undefined,
+      },
       {
         onSuccess: (license) => {
           toast.success(`License ${license.id} created`);
           setShowCreate(false);
-          setNewAdminName('');
+          setNewAdminName("");
         },
-      }
+      },
     );
   };
 
   const handleRevoke = (id: string) => {
-    revokeLicense.mutate(id, { onSuccess: () => toast.success('License revoked') });
+    revokeLicense.mutate(id, {
+      onSuccess: () => toast.success("License revoked"),
+    });
   };
 
   const handleDelete = (id: string) => {
-    deleteLicense.mutate(id, { onSuccess: () => toast.success('License deleted') });
+    deleteLicense.mutate(id, {
+      onSuccess: () => toast.success("License deleted"),
+    });
   };
 
   const handleCopy = (id: string) => {
-    navigator.clipboard.writeText(id).then(() => toast.success('License ID copied'));
+    navigator.clipboard
+      .writeText(id)
+      .then(() => toast.success("License ID copied"));
   };
 
   return (
@@ -422,7 +529,9 @@ function LicensesTab() {
             disabled={isFetching}
             className="gap-1.5 h-8 text-xs border-slate-700 text-slate-300 hover:bg-slate-700"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           <Button
@@ -460,21 +569,27 @@ function LicensesTab() {
                 <TableHead className="text-slate-400">Plan</TableHead>
                 <TableHead className="text-slate-400">Billing</TableHead>
                 <TableHead className="text-slate-400">Assigned To</TableHead>
-                <TableHead className="text-center text-slate-400">Devices</TableHead>
+                <TableHead className="text-center text-slate-400">
+                  Devices
+                </TableHead>
                 <TableHead className="text-slate-400">Status</TableHead>
                 <TableHead className="text-slate-400">Created</TableHead>
-                <TableHead className="text-right text-slate-400">Actions</TableHead>
+                <TableHead className="text-right text-slate-400">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {licenses.map((license: LicenseKey) => (
                 <TableRow
                   key={license.id}
-                  className={`border-slate-700/50 hover:bg-slate-800/40 ${license.status === 'revoked' ? 'opacity-60' : ''}`}
+                  className={`border-slate-700/50 hover:bg-slate-800/40 ${license.status === "revoked" ? "opacity-60" : ""}`}
                 >
                   <TableCell>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs text-indigo-300">{license.id}</span>
+                      <span className="font-mono text-xs text-indigo-300">
+                        {license.id}
+                      </span>
                       <button
                         type="button"
                         onClick={() => handleCopy(license.id)}
@@ -485,19 +600,27 @@ function LicensesTab() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="capitalize text-slate-300 text-sm">{license.planTier}</span>
+                    <span className="capitalize text-slate-300 text-sm">
+                      {license.planTier}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <span className="capitalize text-slate-400 text-xs">{license.billingCycle}</span>
+                    <span className="capitalize text-slate-400 text-xs">
+                      {license.billingCycle}
+                    </span>
                   </TableCell>
                   <TableCell className="text-slate-400 text-sm">
-                    {license.adminName || <span className="text-slate-600">—</span>}
+                    {license.adminName || (
+                      <span className="text-slate-600">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="text-sm text-slate-300">{license.devicesUsed} / {license.maxDevices}</span>
+                    <span className="text-sm text-slate-300">
+                      {license.devicesUsed} / {license.maxDevices}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    {license.status === 'active' ? (
+                    {license.status === "active" ? (
                       <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs">
                         Active
                       </Badge>
@@ -507,10 +630,12 @@ function LicensesTab() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-slate-500 text-xs">{formatDate(license.createdAt)}</TableCell>
+                  <TableCell className="text-slate-500 text-xs">
+                    {formatDate(license.createdAt)}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {license.status === 'active' && (
+                      {license.status === "active" && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -552,33 +677,76 @@ function LicensesTab() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label className="text-slate-300">Plan Tier</Label>
-              <Select value={newPlanTier} onValueChange={(v) => setNewPlanTier(v as LicensePlanTier)}>
+              <Select
+                value={newPlanTier}
+                onValueChange={(v) => setNewPlanTier(v as LicensePlanTier)}
+              >
                 <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
-                  <SelectItem value="basic" className="text-white hover:bg-slate-700">Basic (30 faculty, 500 PDFs, 2 licenses)</SelectItem>
-                  <SelectItem value="premium" className="text-white hover:bg-slate-700">Premium (100 faculty, 2000 PDFs, 4 licenses)</SelectItem>
-                  <SelectItem value="diamond" className="text-white hover:bg-slate-700">Diamond (500 faculty, 5000 PDFs, 6 licenses)</SelectItem>
+                  <SelectItem
+                    value="basic"
+                    className="text-white hover:bg-slate-700"
+                  >
+                    Basic (30 faculty, 500 PDFs, 2 licenses)
+                  </SelectItem>
+                  <SelectItem
+                    value="premium"
+                    className="text-white hover:bg-slate-700"
+                  >
+                    Premium (100 faculty, 2000 PDFs, 4 licenses)
+                  </SelectItem>
+                  <SelectItem
+                    value="diamond"
+                    className="text-white hover:bg-slate-700"
+                  >
+                    Diamond (500 faculty, 5000 PDFs, 6 licenses)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Billing Cycle</Label>
-              <Select value={newBillingCycle} onValueChange={(v) => setNewBillingCycle(v as BillingCycle)}>
+              <Select
+                value={newBillingCycle}
+                onValueChange={(v) => setNewBillingCycle(v as BillingCycle)}
+              >
                 <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
-                  <SelectItem value="monthly" className="text-white hover:bg-slate-700">Monthly</SelectItem>
-                  <SelectItem value="quarterly" className="text-white hover:bg-slate-700">Quarterly</SelectItem>
-                  <SelectItem value="halfYearly" className="text-white hover:bg-slate-700">Half-Yearly</SelectItem>
-                  <SelectItem value="yearly" className="text-white hover:bg-slate-700">Yearly</SelectItem>
+                  <SelectItem
+                    value="monthly"
+                    className="text-white hover:bg-slate-700"
+                  >
+                    Monthly
+                  </SelectItem>
+                  <SelectItem
+                    value="quarterly"
+                    className="text-white hover:bg-slate-700"
+                  >
+                    Quarterly
+                  </SelectItem>
+                  <SelectItem
+                    value="halfYearly"
+                    className="text-white hover:bg-slate-700"
+                  >
+                    Half-Yearly
+                  </SelectItem>
+                  <SelectItem
+                    value="yearly"
+                    className="text-white hover:bg-slate-700"
+                  >
+                    Yearly
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Assign to Admin (optional)</Label>
+              <Label className="text-slate-300">
+                Assign to Admin (optional)
+              </Label>
               <Input
                 value={newAdminName}
                 onChange={(e) => setNewAdminName(e.target.value)}
@@ -587,7 +755,8 @@ function LicensesTab() {
               />
             </div>
             <p className="text-xs text-slate-500">
-              Each license allows up to 10 device logins using the unique license code.
+              Each license allows up to 10 device logins using the unique
+              license code.
             </p>
           </div>
           <DialogFooter>
@@ -604,9 +773,15 @@ function LicensesTab() {
               className="bg-indigo-600 hover:bg-indigo-700 text-white border-0"
             >
               {createLicense.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
               ) : (
-                <><Key className="mr-2 h-4 w-4" />Create License</>
+                <>
+                  <Key className="mr-2 h-4 w-4" />
+                  Create License
+                </>
               )}
             </Button>
           </DialogFooter>
@@ -623,36 +798,38 @@ function AdminMgmtTab() {
   const adminExists = hasAdminCredentialsSet();
 
   const [showReset, setShowReset] = useState(false);
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [resetError, setResetError] = useState<string | null>(null);
 
   const handleReset = () => {
     setResetError(null);
     if (!newUsername.trim()) {
-      setResetError('Username cannot be empty.');
+      setResetError("Username cannot be empty.");
       return;
     }
     if (newPassword.length < 6) {
-      setResetError('Password must be at least 6 characters.');
+      setResetError("Password must be at least 6 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      setResetError('Passwords do not match.');
+      setResetError("Passwords do not match.");
       return;
     }
     setAdminCredentialsLocal(newUsername.trim(), newPassword);
-    toast.success('Admin credentials updated successfully');
+    toast.success("Admin credentials updated successfully");
     setShowReset(false);
-    setNewUsername('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setNewUsername("");
+    setNewPassword("");
+    setConfirmPassword("");
   };
 
   const handleClear = () => {
     clearAdminCredentials();
-    toast.success('Admin credentials cleared. Admin will need to create a new account.');
+    toast.success(
+      "Admin credentials cleared. Admin will need to create a new account.",
+    );
   };
 
   return (
@@ -671,15 +848,24 @@ function AdminMgmtTab() {
             Note: Developer Access
           </CardTitle>
           <CardDescription className="text-slate-400">
-            You have full developer access. You can view, reset, or clear admin credentials from here.
+            You have full developer access. You can view, reset, or clear admin
+            credentials from here.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg bg-slate-900/60 border border-slate-700 p-4">
             <div>
-              <p className="text-xs text-slate-500 mb-1">Current Admin Username</p>
+              <p className="text-xs text-slate-500 mb-1">
+                Current Admin Username
+              </p>
               <p className="font-mono text-sm text-white">
-                {adminExists ? adminUsername ?? '—' : <span className="text-slate-500 italic">No admin account set</span>}
+                {adminExists ? (
+                  (adminUsername ?? "—")
+                ) : (
+                  <span className="text-slate-500 italic">
+                    No admin account set
+                  </span>
+                )}
               </p>
             </div>
             {adminExists && (
@@ -725,7 +911,10 @@ function AdminMgmtTab() {
               <Label className="text-slate-300">New Username</Label>
               <Input
                 value={newUsername}
-                onChange={(e) => { setNewUsername(e.target.value); setResetError(null); }}
+                onChange={(e) => {
+                  setNewUsername(e.target.value);
+                  setResetError(null);
+                }}
                 placeholder="Enter new username"
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                 autoComplete="off"
@@ -736,7 +925,10 @@ function AdminMgmtTab() {
               <Input
                 type="password"
                 value={newPassword}
-                onChange={(e) => { setNewPassword(e.target.value); setResetError(null); }}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setResetError(null);
+                }}
                 placeholder="Minimum 6 characters"
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                 autoComplete="new-password"
@@ -747,7 +939,10 @@ function AdminMgmtTab() {
               <Input
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setResetError(null); }}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setResetError(null);
+                }}
                 placeholder="Re-enter password"
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                 autoComplete="new-password"
@@ -763,7 +958,10 @@ function AdminMgmtTab() {
           <DialogFooter>
             <Button
               variant="ghost"
-              onClick={() => { setShowReset(false); setResetError(null); }}
+              onClick={() => {
+                setShowReset(false);
+                setResetError(null);
+              }}
               className="text-slate-400 hover:text-slate-200 hover:bg-slate-800"
             >
               Cancel
@@ -787,12 +985,16 @@ function AdminMgmtTab() {
 
 function SubscriptionTab() {
   const selectedPlan = getSelectedPlan();
-  const planTier = PLAN_TIERS.find((p) => p.name === selectedPlan.planName) ?? PLAN_TIERS[0];
+  const planTier =
+    PLAN_TIERS.find((p) => p.name === selectedPlan.planName) ?? PLAN_TIERS[0];
   const { data: faculty = [] } = useAllFacultyWithPdfCount();
   const { data: pdfs = [] } = useAllPDFs();
 
   const activeFaculty = faculty.filter((f) => f.faculty.active).length;
-  const facultyPercent = Math.min((activeFaculty / planTier.maxFaculty) * 100, 100);
+  const facultyPercent = Math.min(
+    (activeFaculty / planTier.maxFaculty) * 100,
+    100,
+  );
   const pdfPercent = Math.min((pdfs.length / planTier.maxPdfs) * 100, 100);
 
   const planIcons: Record<string, React.ElementType> = {
@@ -811,29 +1013,39 @@ function SubscriptionTab() {
             Current Plan: {planTier.label}
           </CardTitle>
           <CardDescription className="text-slate-400">
-            Billing cycle: {selectedPlan.billingCycle} · License ID: {getLicenseId()}
+            Billing cycle: {selectedPlan.billingCycle} · License ID:{" "}
+            {getLicenseId()}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Faculty Usage</span>
-              <span className="font-medium text-white">{activeFaculty} / {planTier.maxFaculty}</span>
+              <span className="font-medium text-white">
+                {activeFaculty} / {planTier.maxFaculty}
+              </span>
             </div>
             <Progress value={facultyPercent} className="h-2" />
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">PDF Usage</span>
-              <span className="font-medium text-white">{pdfs.length} / {planTier.maxPdfs}</span>
+              <span className="font-medium text-white">
+                {pdfs.length} / {planTier.maxPdfs}
+              </span>
             </div>
             <Progress value={pdfPercent} className="h-2" />
           </div>
           <div className="pt-2">
-            <p className="text-sm font-medium text-white mb-2">Plan Features:</p>
+            <p className="text-sm font-medium text-white mb-2">
+              Plan Features:
+            </p>
             <ul className="space-y-1">
               {planTier.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm text-slate-400">
+                <li
+                  key={feature}
+                  className="flex items-center gap-2 text-sm text-slate-400"
+                >
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                   {feature}
                 </li>
@@ -851,12 +1063,11 @@ function SubscriptionTab() {
 function DeveloperPortalContent() {
   const { data: faculty = [] } = useAllFacultyWithPdfCount();
   const { data: pdfs = [] } = useAllPDFs();
-  const { data: devices = [] } = useGetDevices();
   const { data: licenses = [] } = useAllLicenses();
 
   const activeFaculty = faculty.filter((f) => f.faculty.active).length;
   const taughtPdfs = pdfs.filter((p) => p.taught).length;
-  const activeLicenses = licenses.filter((l) => l.status === 'active').length;
+  const activeLicenses = licenses.filter((l) => l.status === "active").length;
   const devUsername = getDeveloperUsername();
 
   const handleLock = () => {
@@ -873,9 +1084,13 @@ function DeveloperPortalContent() {
               <Terminal className="h-5 w-5 text-indigo-400" />
             </div>
             <div>
-              <h1 className="font-display text-lg font-bold text-white leading-tight">Developer Portal</h1>
+              <h1 className="font-display text-lg font-bold text-white leading-tight">
+                Developer Portal
+              </h1>
               {devUsername && (
-                <p className="text-xs text-slate-500 leading-tight">Signed in as {devUsername}</p>
+                <p className="text-xs text-slate-500 leading-tight">
+                  Signed in as {devUsername}
+                </p>
               )}
             </div>
           </div>
@@ -895,21 +1110,63 @@ function DeveloperPortalContent() {
       <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatsCard icon={Users} label="Active Faculty" value={activeFaculty} />
+          <StatsCard
+            icon={Users}
+            label="Active Faculty"
+            value={activeFaculty}
+          />
           <StatsCard icon={FileText} label="Total PDFs" value={pdfs.length} />
-          <StatsCard icon={CheckCircle2} label="PDFs Taught" value={taughtPdfs} />
-          <StatsCard icon={Key} label="Active Licenses" value={activeLicenses} />
+          <StatsCard
+            icon={CheckCircle2}
+            label="PDFs Taught"
+            value={taughtPdfs}
+          />
+          <StatsCard
+            icon={Key}
+            label="Active Licenses"
+            value={activeLicenses}
+          />
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="faculty">
           <TabsList className="w-full max-w-2xl grid grid-cols-6 bg-slate-800/80 border border-slate-700">
-            <TabsTrigger value="faculty" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs">Faculty</TabsTrigger>
-            <TabsTrigger value="pdfs" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs">PDFs</TabsTrigger>
-            <TabsTrigger value="devices" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs">Devices</TabsTrigger>
-            <TabsTrigger value="licenses" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs">Licenses</TabsTrigger>
-            <TabsTrigger value="admin-mgmt" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs">Admin Mgmt</TabsTrigger>
-            <TabsTrigger value="subscription" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs">Plan</TabsTrigger>
+            <TabsTrigger
+              value="faculty"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              Faculty
+            </TabsTrigger>
+            <TabsTrigger
+              value="pdfs"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              PDFs
+            </TabsTrigger>
+            <TabsTrigger
+              value="devices"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              Devices
+            </TabsTrigger>
+            <TabsTrigger
+              value="licenses"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              Licenses
+            </TabsTrigger>
+            <TabsTrigger
+              value="admin-mgmt"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              Admin Mgmt
+            </TabsTrigger>
+            <TabsTrigger
+              value="subscription"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              Plan
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="faculty" className="mt-6">

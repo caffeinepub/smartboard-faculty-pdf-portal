@@ -1,18 +1,22 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from '@tanstack/react-router';
-import AnnotationCanvas, { type DrawingStroke } from '../components/AnnotationCanvas';
-import AnnotationToolbar, { type AnnotationTool } from '../components/AnnotationToolbar';
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { AlertCircle, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import AnnotationCanvas, {
+  type DrawingStroke,
+} from "../components/AnnotationCanvas";
+import AnnotationToolbar, {
+  type AnnotationTool,
+} from "../components/AnnotationToolbar";
 import {
-  usePDFsByFaculty,
   useAnnotationsByPDF,
-  useSaveAnnotation,
   useMarkAsTaught,
-} from '../hooks/useQueries';
-import { AlertCircle, Loader2 } from 'lucide-react';
+  usePDFsByFaculty,
+  useSaveAnnotation,
+} from "../hooks/useQueries";
 
 // Decode base64 PDF content to a Uint8Array for PDF.js
 function base64ToUint8Array(base64: string): Uint8Array {
-  const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+  const base64Data = base64.includes(",") ? base64.split(",")[1] : base64;
   const binaryString = atob(base64Data);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
@@ -22,7 +26,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 export default function TeachingView() {
-  const { pdfId, facultyId } = useParams({ from: '/teach/$pdfId/$facultyId' });
+  const { pdfId, facultyId } = useParams({ from: "/teach/$pdfId/$facultyId" });
   const navigate = useNavigate();
 
   const pdfIdNum = Number(pdfId);
@@ -30,9 +34,9 @@ export default function TeachingView() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [activeTool, setActiveTool] = useState<AnnotationTool>('draw');
-  const [strokeColor, setStrokeColor] = useState('#1a2744');
-  const [fillColor, setFillColor] = useState('#fef08a');
+  const [activeTool, setActiveTool] = useState<AnnotationTool>("draw");
+  const [strokeColor, setStrokeColor] = useState("#1a2744");
+  const [fillColor, setFillColor] = useState("#fef08a");
   const [strokeSize, setStrokeSize] = useState(3);
   const [isSaving, setIsSaving] = useState(false);
   const [isMarkingTaught, setIsMarkingTaught] = useState(false);
@@ -48,14 +52,18 @@ export default function TeachingView() {
   const renderTaskRef = useRef<any>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: pdfs = [], isLoading: pdfsLoading } = usePDFsByFaculty(facultyIdNum);
-  const { data: annotations = [], isLoading: annotationsLoading } = useAnnotationsByPDF(pdfIdNum);
+  const { data: pdfs = [], isLoading: pdfsLoading } =
+    usePDFsByFaculty(facultyIdNum);
+  const { data: annotations = [], isLoading: annotationsLoading } =
+    useAnnotationsByPDF(pdfIdNum);
   const saveAnnotation = useSaveAnnotation();
   const markAsTaught = useMarkAsTaught();
 
   const pdf = pdfs.find((p) => p.id === pdfIdNum);
 
-  const pageAnnotations = annotations.filter((a) => a.pageNumber === currentPage);
+  const pageAnnotations = annotations.filter(
+    (a) => a.pageNumber === currentPage,
+  );
 
   // Load PDF.js from CDN dynamically
   const loadPdfJs = useCallback((): Promise<any> => {
@@ -64,19 +72,20 @@ export default function TeachingView() {
         resolve((window as any).pdfjsLib);
         return;
       }
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      const script = document.createElement("script");
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
       script.onload = () => {
         const pdfjsLib = (window as any).pdfjsLib;
         if (pdfjsLib) {
           pdfjsLib.GlobalWorkerOptions.workerSrc =
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
           resolve(pdfjsLib);
         } else {
-          reject(new Error('PDF.js failed to load'));
+          reject(new Error("PDF.js failed to load"));
         }
       };
-      script.onerror = () => reject(new Error('Failed to load PDF.js script'));
+      script.onerror = () => reject(new Error("Failed to load PDF.js script"));
       document.head.appendChild(script);
     });
   }, []);
@@ -104,8 +113,10 @@ export default function TeachingView() {
         setCurrentPage(1);
       } catch (err: any) {
         if (!cancelled) {
-          console.error('PDF load error:', err);
-          setPdfError('Failed to load PDF. The file may be corrupted or in an unsupported format.');
+          console.error("PDF load error:", err);
+          setPdfError(
+            "Failed to load PDF. The file may be corrupted or in an unsupported format.",
+          );
         }
       } finally {
         if (!cancelled) setPdfRendering(false);
@@ -126,7 +137,9 @@ export default function TeachingView() {
     (async () => {
       try {
         if (renderTaskRef.current) {
-          try { renderTaskRef.current.cancel(); } catch {}
+          try {
+            renderTaskRef.current.cancel();
+          } catch {}
           renderTaskRef.current = null;
         }
 
@@ -134,7 +147,9 @@ export default function TeachingView() {
         if (cancelled) return;
 
         const container = containerRef.current;
-        const containerWidth = container ? container.clientWidth : window.innerWidth;
+        const containerWidth = container
+          ? container.clientWidth
+          : window.innerWidth;
         const viewport = page.getViewport({ scale: 1 });
         const scale = Math.max(containerWidth / viewport.width, 1.2);
         const scaledViewport = page.getViewport({ scale });
@@ -144,19 +159,25 @@ export default function TeachingView() {
 
         canvas.width = scaledViewport.width;
         canvas.height = scaledViewport.height;
-        setCanvasSize({ width: scaledViewport.width, height: scaledViewport.height });
+        setCanvasSize({
+          width: scaledViewport.width,
+          height: scaledViewport.height,
+        });
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const renderTask = page.render({ canvasContext: ctx, viewport: scaledViewport });
+        const renderTask = page.render({
+          canvasContext: ctx,
+          viewport: scaledViewport,
+        });
         renderTaskRef.current = renderTask;
         await renderTask.promise;
         renderTaskRef.current = null;
       } catch (err: any) {
-        if (err?.name !== 'RenderingCancelledException' && !cancelled) {
-          console.error('PDF render error:', err);
-          setPdfError('Failed to render PDF page.');
+        if (err?.name !== "RenderingCancelledException" && !cancelled) {
+          console.error("PDF render error:", err);
+          setPdfError("Failed to render PDF page.");
         }
       }
     })();
@@ -164,7 +185,9 @@ export default function TeachingView() {
     return () => {
       cancelled = true;
       if (renderTaskRef.current) {
-        try { renderTaskRef.current.cancel(); } catch {}
+        try {
+          renderTaskRef.current.cancel();
+        } catch {}
         renderTaskRef.current = null;
       }
     };
@@ -215,7 +238,7 @@ export default function TeachingView() {
   };
 
   const handleBack = () => {
-    navigate({ to: '/faculty' });
+    navigate({ to: "/faculty" });
   };
 
   const isLoading = pdfsLoading || annotationsLoading || pdfRendering;
@@ -263,7 +286,9 @@ export default function TeachingView() {
           <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-background">
             <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
             <p className="text-muted-foreground text-sm">
-              {pdfsLoading || annotationsLoading ? 'Loading PDF data…' : 'Rendering PDF page…'}
+              {pdfsLoading || annotationsLoading
+                ? "Loading PDF data…"
+                : "Rendering PDF page…"}
             </p>
           </div>
         )}
@@ -273,12 +298,15 @@ export default function TeachingView() {
           <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-background px-6">
             <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-6 max-w-md text-center">
               <AlertCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
-              <h3 className="text-foreground font-semibold text-lg mb-2">PDF Could Not Be Loaded</h3>
+              <h3 className="text-foreground font-semibold text-lg mb-2">
+                PDF Could Not Be Loaded
+              </h3>
               <p className="text-muted-foreground text-sm">
                 {pdfError ||
-                  'This PDF could not be found. It may have been deleted or the link is invalid.'}
+                  "This PDF could not be found. It may have been deleted or the link is invalid."}
               </p>
               <button
+                type="button"
                 onClick={handleBack}
                 className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
               >
@@ -293,8 +321,8 @@ export default function TeachingView() {
           <div
             className="relative"
             style={{
-              width: canvasSize.width > 0 ? canvasSize.width : '100%',
-              minHeight: canvasSize.height > 0 ? canvasSize.height : '100vh',
+              width: canvasSize.width > 0 ? canvasSize.width : "100%",
+              minHeight: canvasSize.height > 0 ? canvasSize.height : "100vh",
             }}
           >
             {/* PDF rendered canvas */}
@@ -302,8 +330,8 @@ export default function TeachingView() {
               ref={pdfCanvasRef}
               className="block"
               style={{
-                display: pdfDoc ? 'block' : 'none',
-                background: '#ffffff',
+                display: pdfDoc ? "block" : "none",
+                background: "#ffffff",
               }}
             />
 

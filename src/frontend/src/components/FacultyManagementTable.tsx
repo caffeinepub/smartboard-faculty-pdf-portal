@@ -1,15 +1,3 @@
-import React, { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,21 +8,50 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Pencil, Trash2, Check, X, UserCheck, UserX, Loader2 } from 'lucide-react';
-import type { Faculty, PDF } from '../hooks/useQueries';
+} from "@/components/ui/tooltip";
 import {
-  useDeleteFaculty,
-  useUpdateFacultyName,
+  Check,
+  Loader2,
+  Pencil,
+  Trash2,
+  UserCheck,
+  UserX,
+  X,
+} from "lucide-react";
+import React, { useState } from "react";
+import type { Department, Faculty, PDF } from "../hooks/useQueries";
+import {
+  useAllDepartments,
   useDeactivateFaculty,
+  useDeleteFaculty,
   useReactivateFaculty,
-} from '../hooks/useQueries';
+  useUpdateFacultyDepartment,
+  useUpdateFacultyName,
+} from "../hooks/useQueries";
 
 interface FacultyManagementTableProps {
   facultyList: Faculty[];
@@ -44,32 +61,56 @@ interface FacultyManagementTableProps {
 function FacultyRow({
   faculty,
   pdfCount,
+  departments,
 }: {
   faculty: Faculty;
   pdfCount: number;
+  departments: Department[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(faculty.name);
+  const [editDeptId, setEditDeptId] = useState<string>(
+    faculty.departmentId ? String(faculty.departmentId) : "none",
+  );
 
   const updateName = useUpdateFacultyName();
   const deactivate = useDeactivateFaculty();
   const reactivate = useReactivateFaculty();
   const deleteFaculty = useDeleteFaculty();
+  const updateDept = useUpdateFacultyDepartment();
 
-  const handleSaveName = async () => {
+  const departmentName = faculty.departmentId
+    ? (departments.find((d) => d.id === faculty.departmentId)?.name ?? "—")
+    : "—";
+
+  const handleSave = async () => {
     const trimmed = editName.trim();
-    if (!trimmed || trimmed === faculty.name) {
+    if (!trimmed) {
       setIsEditing(false);
       setEditName(faculty.name);
       return;
     }
-    try {
-      await updateName.mutateAsync({ facultyId: faculty.id, name: trimmed });
-      setIsEditing(false);
-    } catch {
+
+    await Promise.all([
+      trimmed !== faculty.name
+        ? updateName.mutateAsync({ facultyId: faculty.id, name: trimmed })
+        : Promise.resolve(),
+      updateDept.mutateAsync({
+        facultyId: faculty.id,
+        departmentId:
+          editDeptId !== "none" ? Number.parseInt(editDeptId, 10) : undefined,
+      }),
+    ]).catch(() => {
       setEditName(faculty.name);
-      setIsEditing(false);
-    }
+    });
+
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditName(faculty.name);
+    setEditDeptId(faculty.departmentId ? String(faculty.departmentId) : "none");
   };
 
   const handleToggleActive = async () => {
@@ -96,37 +137,72 @@ function FacultyRow({
     updateName.isPending ||
     deactivate.isPending ||
     reactivate.isPending ||
-    deleteFaculty.isPending;
+    deleteFaculty.isPending ||
+    updateDept.isPending;
 
   return (
-    <TableRow className={!faculty.active ? 'opacity-60' : ''}>
+    <TableRow className={!faculty.active ? "opacity-60" : ""}>
       <TableCell className="font-medium">
         {isEditing ? (
           <Input
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-            className="h-8 w-48"
+            className="h-8 w-40"
             autoFocus
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSaveName();
-              if (e.key === 'Escape') {
-                setIsEditing(false);
-                setEditName(faculty.name);
-              }
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") handleCancelEdit();
             }}
           />
         ) : (
-          <span>{faculty.name}</span>
+          <div>
+            <span>{faculty.name}</span>
+            {faculty.subject && (
+              <p className="text-xs text-muted-foreground">{faculty.subject}</p>
+            )}
+          </div>
         )}
       </TableCell>
       <TableCell>
-        {faculty.active ? (
-          <Badge className="bg-success/15 text-success border-success/30 text-xs">Active</Badge>
+        {isEditing ? (
+          <Select value={editDeptId} onValueChange={setEditDeptId}>
+            <SelectTrigger className="h-8 w-36 text-xs">
+              <SelectValue placeholder="No dept" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No department</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
-          <Badge variant="outline" className="text-muted-foreground text-xs">Inactive</Badge>
+          <span className="text-sm text-muted-foreground">
+            {departmentName}
+          </span>
         )}
       </TableCell>
-      <TableCell className="text-center text-sm text-muted-foreground">{pdfCount}</TableCell>
+      <TableCell>
+        <span className="text-xs text-muted-foreground font-mono">
+          {faculty.username ?? "—"}
+        </span>
+      </TableCell>
+      <TableCell>
+        {faculty.active ? (
+          <Badge className="bg-success/15 text-success border-success/30 text-xs">
+            Active
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-muted-foreground text-xs">
+            Inactive
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell className="text-center text-sm text-muted-foreground">
+        {pdfCount}
+      </TableCell>
       <TableCell>
         <div className="flex items-center gap-1 justify-end">
           {isEditing ? (
@@ -135,19 +211,20 @@ function FacultyRow({
                 size="icon"
                 variant="ghost"
                 className="h-8 w-8 text-success hover:text-success"
-                onClick={handleSaveName}
+                onClick={handleSave}
                 disabled={isBusy}
               >
-                {updateName.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {isBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
               </Button>
               <Button
                 size="icon"
                 variant="ghost"
                 className="h-8 w-8"
-                onClick={() => {
-                  setIsEditing(false);
-                  setEditName(faculty.name);
-                }}
+                onClick={handleCancelEdit}
                 disabled={isBusy}
               >
                 <X className="h-4 w-4" />
@@ -168,7 +245,7 @@ function FacultyRow({
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Edit name</TooltipContent>
+                  <TooltipContent>Edit faculty</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
@@ -189,7 +266,9 @@ function FacultyRow({
                       )}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>{faculty.active ? 'Deactivate' : 'Reactivate'}</TooltipContent>
+                  <TooltipContent>
+                    {faculty.active ? "Deactivate" : "Reactivate"}
+                  </TooltipContent>
                 </Tooltip>
 
                 <AlertDialog>
@@ -216,8 +295,9 @@ function FacultyRow({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Faculty Member</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete <strong>{faculty.name}</strong>? This action
-                        cannot be undone and will remove them from all assigned PDFs.
+                        Are you sure you want to delete{" "}
+                        <strong>{faculty.name}</strong>? This action cannot be
+                        undone and will remove them from all assigned PDFs.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -240,25 +320,42 @@ function FacultyRow({
   );
 }
 
-export default function FacultyManagementTable({ facultyList, allPdfs }: FacultyManagementTableProps) {
+export default function FacultyManagementTable({
+  facultyList,
+  allPdfs,
+}: FacultyManagementTableProps) {
+  const { data: departments = [] } = useAllDepartments();
+
   if (facultyList.length === 0) {
     return (
       <div className="rounded-lg border border-border p-8 text-center text-muted-foreground">
         <p className="font-medium">No faculty members yet.</p>
-        <p className="text-sm mt-1">Add faculty members using the form on the left.</p>
+        <p className="text-sm mt-1">
+          Add faculty members using the form on the left.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="rounded-lg border border-border overflow-hidden overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-secondary/50">
             <TableHead className="font-bold text-foreground">Name</TableHead>
+            <TableHead className="font-bold text-foreground">
+              Department
+            </TableHead>
+            <TableHead className="font-bold text-foreground">
+              Username
+            </TableHead>
             <TableHead className="font-bold text-foreground">Status</TableHead>
-            <TableHead className="font-bold text-foreground text-center">PDFs</TableHead>
-            <TableHead className="font-bold text-foreground text-right">Actions</TableHead>
+            <TableHead className="font-bold text-foreground text-center">
+              PDFs
+            </TableHead>
+            <TableHead className="font-bold text-foreground text-right">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -266,7 +363,10 @@ export default function FacultyManagementTable({ facultyList, allPdfs }: Faculty
             <FacultyRow
               key={faculty.id}
               faculty={faculty}
-              pdfCount={allPdfs.filter((p) => p.facultyIds.includes(faculty.id)).length}
+              departments={departments as Department[]}
+              pdfCount={
+                allPdfs.filter((p) => p.facultyIds.includes(faculty.id)).length
+              }
             />
           ))}
         </TableBody>

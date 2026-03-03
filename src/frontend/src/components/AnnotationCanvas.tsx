@@ -1,6 +1,14 @@
-import React, { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
-import type { AnnotationTool } from './AnnotationToolbar';
-import type { LocalAnnotation } from '../hooks/useQueries';
+import type React from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import type { LocalAnnotation } from "../hooks/useQueries";
+import type { AnnotationTool } from "./AnnotationToolbar";
 
 interface Point {
   x: number;
@@ -38,13 +46,15 @@ export interface AnnotationCanvasRef {
   clearPage: () => void;
 }
 
-function parseAnnotationCoordinates(annotation: LocalAnnotation): DrawingStroke | null {
+function parseAnnotationCoordinates(
+  annotation: LocalAnnotation,
+): DrawingStroke | null {
   try {
     const data = JSON.parse(annotation.coordinates);
     return {
       tool: annotation.annotationType as AnnotationTool,
       points: data.points ?? [],
-      color: data.color ?? '#1a2744',
+      color: data.color ?? "#1a2744",
       size: data.size ?? 3,
       text: data.text,
       page: annotation.pageNumber,
@@ -64,7 +74,7 @@ function drawArrowhead(
   fromY: number,
   toX: number,
   toY: number,
-  size: number
+  size: number,
 ) {
   const angle = Math.atan2(toY - fromY, toX - fromX);
   const headLen = Math.max(12, size * 4);
@@ -72,12 +82,12 @@ function drawArrowhead(
   ctx.moveTo(toX, toY);
   ctx.lineTo(
     toX - headLen * Math.cos(angle - Math.PI / 6),
-    toY - headLen * Math.sin(angle - Math.PI / 6)
+    toY - headLen * Math.sin(angle - Math.PI / 6),
   );
   ctx.moveTo(toX, toY);
   ctx.lineTo(
     toX - headLen * Math.cos(angle + Math.PI / 6),
-    toY - headLen * Math.sin(angle + Math.PI / 6)
+    toY - headLen * Math.sin(angle + Math.PI / 6),
   );
   ctx.stroke();
 }
@@ -88,16 +98,18 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
   ctx.save();
 
   const startPt = stroke.points[0];
-  const endX = stroke.endX ?? (stroke.points[stroke.points.length - 1]?.x ?? startPt.x);
-  const endY = stroke.endY ?? (stroke.points[stroke.points.length - 1]?.y ?? startPt.y);
+  const endX =
+    stroke.endX ?? stroke.points[stroke.points.length - 1]?.x ?? startPt.x;
+  const endY =
+    stroke.endY ?? stroke.points[stroke.points.length - 1]?.y ?? startPt.y;
 
   switch (stroke.tool) {
-    case 'highlight': {
+    case "highlight": {
       ctx.globalAlpha = 0.35;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size * 4;
-      ctx.lineCap = 'square';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = "square";
+      ctx.lineJoin = "round";
       ctx.beginPath();
       ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
       for (let i = 1; i < stroke.points.length; i++) {
@@ -107,12 +119,12 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'draw': {
+    case "draw": {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.beginPath();
       ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
       for (let i = 1; i < stroke.points.length; i++) {
@@ -122,7 +134,7 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'text': {
+    case "text": {
       ctx.globalAlpha = 1;
       ctx.fillStyle = stroke.color;
       ctx.font = `${stroke.size * 4 + 12}px Inter, sans-serif`;
@@ -132,12 +144,12 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'eraser': {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.strokeStyle = 'rgba(0,0,0,1)';
+    case "eraser": {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.strokeStyle = "rgba(0,0,0,1)";
       ctx.lineWidth = stroke.size * 6;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.beginPath();
       ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
       for (let i = 1; i < stroke.points.length; i++) {
@@ -147,11 +159,11 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'rectangle': {
+    case "rectangle": {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       const rx = Math.min(startPt.x, endX);
       const ry = Math.min(startPt.y, endY);
       const rw = Math.abs(endX - startPt.x);
@@ -160,7 +172,7 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'circle': {
+    case "circle": {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
@@ -174,12 +186,12 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'triangle': {
+    case "triangle": {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       const midX = (startPt.x + endX) / 2;
       ctx.beginPath();
       ctx.moveTo(midX, startPt.y);
@@ -190,11 +202,11 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'arrow': {
+    case "arrow": {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(startPt.x, startPt.y);
       ctx.lineTo(endX, endY);
@@ -203,11 +215,11 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'line': {
+    case "line": {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(startPt.x, startPt.y);
       ctx.lineTo(endX, endY);
@@ -215,8 +227,8 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'backgroundHighlight': {
-      const bgColor = stroke.fillColor ?? '#fef08a';
+    case "backgroundHighlight": {
+      const bgColor = stroke.fillColor ?? "#fef08a";
       ctx.globalAlpha = 0.45;
       ctx.fillStyle = bgColor;
       const bx = Math.min(startPt.x, endX);
@@ -227,14 +239,20 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
       break;
     }
 
-    case 'image': {
+    case "image": {
       if (stroke.imageData) {
         const img = new Image();
         img.onload = () => {
           const maxW = 300;
           const maxH = 300;
           const scale = Math.min(maxW / img.width, maxH / img.height, 1);
-          ctx.drawImage(img, startPt.x, startPt.y, img.width * scale, img.height * scale);
+          ctx.drawImage(
+            img,
+            startPt.x,
+            startPt.y,
+            img.width * scale,
+            img.height * scale,
+          );
         };
         img.src = stroke.imageData;
       }
@@ -263,15 +281,20 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       pendingImageData,
       onImagePlaced,
     },
-    ref
+    ref,
   ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const currentStrokeRef = useRef<Point[]>([]);
     const dragStartRef = useRef<Point | null>(null);
-    const [pageStrokes, setPageStrokes] = useState<Map<number, DrawingStroke[]>>(new Map());
-    const [pendingText, setPendingText] = useState<{ x: number; y: number } | null>(null);
-    const [textInput, setTextInput] = useState('');
+    const [pageStrokes, setPageStrokes] = useState<
+      Map<number, DrawingStroke[]>
+    >(new Map());
+    const [pendingText, setPendingText] = useState<{
+      x: number;
+      y: number;
+    } | null>(null);
+    const [textInput, setTextInput] = useState("");
 
     // Expose clearPage method
     useImperativeHandle(ref, () => ({
@@ -302,7 +325,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
     const redrawCanvas = useCallback(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -322,38 +345,44 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
-      if ('touches' in e) {
+      if ("touches" in e) {
         const touch = e.touches[0];
         return {
           x: (touch.clientX - rect.left) * scaleX,
           y: (touch.clientY - rect.top) * scaleY,
         };
-      } else {
-        return {
-          x: (e.clientX - rect.left) * scaleX,
-          y: (e.clientY - rect.top) * scaleY,
-        };
       }
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
     };
 
     // Shape tools that use start/end drag
     const isShapeTool = (tool: AnnotationTool) =>
-      ['rectangle', 'circle', 'triangle', 'arrow', 'line', 'backgroundHighlight'].includes(tool);
+      [
+        "rectangle",
+        "circle",
+        "triangle",
+        "arrow",
+        "line",
+        "backgroundHighlight",
+      ].includes(tool);
 
     const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
       e.preventDefault();
       const point = getCanvasPoint(e);
 
-      if (activeTool === 'text') {
+      if (activeTool === "text") {
         setPendingText(point);
-        setTextInput('');
+        setTextInput("");
         return;
       }
 
       // Image tool: place image at click point
-      if (activeTool === 'image' && pendingImageData) {
+      if (activeTool === "image" && pendingImageData) {
         const stroke: DrawingStroke = {
-          tool: 'image',
+          tool: "image",
           points: [point],
           color: strokeColor,
           size: strokeSize,
@@ -378,12 +407,12 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       if (!isShapeTool(activeTool)) {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        if (activeTool !== 'eraser') {
+        if (activeTool !== "eraser") {
           ctx.save();
-          if (activeTool === 'highlight') {
+          if (activeTool === "highlight") {
             ctx.globalAlpha = 0.35;
             ctx.fillStyle = strokeColor;
             ctx.beginPath();
@@ -408,7 +437,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       if (isShapeTool(activeTool)) {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -437,7 +466,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
 
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
       const points = currentStrokeRef.current;
@@ -516,7 +545,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       }
 
       const stroke: DrawingStroke = {
-        tool: 'text',
+        tool: "text",
         points: [pendingText],
         color: strokeColor,
         size: strokeSize,
@@ -526,7 +555,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
 
       const canvas = canvasRef.current;
       if (canvas) {
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (ctx) drawStroke(ctx, stroke);
       }
 
@@ -539,7 +568,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
 
       onAnnotationComplete(stroke);
       setPendingText(null);
-      setTextInput('');
+      setTextInput("");
     };
 
     // Resize canvas to fill container
@@ -564,10 +593,14 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
 
     const cursorStyle = (): string => {
       switch (activeTool) {
-        case 'eraser': return 'cursor-cell';
-        case 'text': return 'cursor-text';
-        case 'image': return pendingImageData ? 'cursor-crosshair' : 'cursor-default';
-        default: return 'cursor-crosshair';
+        case "eraser":
+          return "cursor-cell";
+        case "text":
+          return "cursor-text";
+        case "image":
+          return pendingImageData ? "cursor-crosshair" : "cursor-default";
+        default:
+          return "cursor-crosshair";
       }
     };
 
@@ -598,14 +631,16 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleTextSubmit();
-                if (e.key === 'Escape') {
+                if (e.key === "Enter") handleTextSubmit();
+                if (e.key === "Escape") {
                   setPendingText(null);
-                  setTextInput('');
+                  setTextInput("");
                 }
               }}
               onBlur={handleTextSubmit}
-              autoFocus
+              ref={(el) => {
+                if (el) el.focus();
+              }}
               className="bg-transparent border-b-2 border-primary outline-none text-foreground px-1 min-w-[120px]"
               style={{
                 fontSize: `${strokeSize * 4 + 12}px`,
@@ -617,9 +652,9 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
-AnnotationCanvas.displayName = 'AnnotationCanvas';
+AnnotationCanvas.displayName = "AnnotationCanvas";
 
 export default AnnotationCanvas;

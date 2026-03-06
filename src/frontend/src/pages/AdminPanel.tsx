@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   AlertCircle,
+  BarChart2,
   Building2,
   CreditCard,
   FileText,
@@ -31,11 +32,14 @@ import {
   Monitor,
   Plus,
   Settings,
+  Shield,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import AdminPasscodeGate, { LOCK_EVENT } from "../components/AdminPasscodeGate";
+import AuditReportSection from "../components/AuditReportSection";
 import ChangeAdminCredentialsForm from "../components/ChangeAdminCredentialsForm";
 import CreateFacultyModal from "../components/CreateFacultyModal";
 import DepartmentManagementSection from "../components/DepartmentManagementSection";
@@ -44,6 +48,8 @@ import FacultyManagementTable from "../components/FacultyManagementTable";
 import PDFListTable from "../components/PDFListTable";
 import PDFUploadForm from "../components/PDFUploadForm";
 import SubscriptionSection from "../components/SubscriptionSection";
+import UsageReportSection from "../components/UsageReportSection";
+import UserManagementReport from "../components/UserManagementReport";
 import {
   type Faculty,
   PLAN_TIERS,
@@ -52,6 +58,7 @@ import {
   useAllFacultyAdmin,
   useAllPDFs,
   useGetDeviceCount,
+  useLogAuditEvent,
 } from "../hooks/useQueries";
 
 function parseInlineError(err: unknown): string {
@@ -92,6 +99,7 @@ function AdminPanelContent() {
   const { data: departments = [] } = useAllDepartments();
   const { data: deviceCount = 0 } = useGetDeviceCount();
   const addFaculty = useAddFaculty();
+  const logAuditEvent = useLogAuditEvent();
 
   const activeFacultyCount = (allFaculty as Faculty[]).filter(
     (f) => f.active,
@@ -128,6 +136,12 @@ function AdminPanelContent() {
         setNewFacultyUsername("");
         setNewFacultyPassword("");
         setFacultyError(null);
+        logAuditEvent.mutate({
+          actorType: "admin",
+          actorName: "Admin",
+          action: "FACULTY_CREATED",
+          description: `Faculty member "${name}" created`,
+        });
       } else if (result.__kind__ === "limitReached") {
         setFacultyError(
           `Faculty limit of ${result.limit} reached. Please upgrade your plan.`,
@@ -204,6 +218,18 @@ function AdminPanelContent() {
             <TabsTrigger value="devices" className="gap-1.5">
               <Monitor className="h-4 w-4" />
               Devices
+            </TabsTrigger>
+            <TabsTrigger value="usage-report" className="gap-1.5">
+              <BarChart2 className="h-4 w-4" />
+              Usage Report
+            </TabsTrigger>
+            <TabsTrigger value="audit-report" className="gap-1.5">
+              <Shield className="h-4 w-4" />
+              Audit Report
+            </TabsTrigger>
+            <TabsTrigger value="user-report" className="gap-1.5">
+              <ShieldCheck className="h-4 w-4" />
+              User Report
             </TabsTrigger>
             <TabsTrigger value="settings" className="gap-1.5">
               <KeyRound className="h-4 w-4" />
@@ -385,6 +411,21 @@ function AdminPanelContent() {
           {/* Devices Tab */}
           <TabsContent value="devices" className="mt-6">
             <DeviceManagementSection />
+          </TabsContent>
+
+          {/* Usage Report Tab */}
+          <TabsContent value="usage-report" className="mt-6">
+            <UsageReportSection />
+          </TabsContent>
+
+          {/* Audit Report Tab */}
+          <TabsContent value="audit-report" className="mt-6">
+            <AuditReportSection />
+          </TabsContent>
+
+          {/* User Management Report Tab */}
+          <TabsContent value="user-report" className="mt-6">
+            <UserManagementReport />
           </TabsContent>
 
           {/* Settings Tab */}

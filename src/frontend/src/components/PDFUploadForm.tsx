@@ -25,6 +25,7 @@ import {
   type Faculty,
   useAllDepartments,
   useAllFacultyAdmin,
+  useLogAuditEvent,
   useUploadPDF,
 } from "../hooks/useQueries";
 
@@ -53,6 +54,7 @@ export default function PDFUploadForm({
   const activeFaculty = (facultyList as Faculty[]).filter((f) => f.active);
 
   const uploadMutation = useUploadPDF();
+  const logAuditEvent = useLogAuditEvent();
 
   // When department is selected, auto-select all faculty in that department
   const handleDeptChange = (deptId: string) => {
@@ -130,6 +132,12 @@ export default function PDFUploadForm({
         });
 
         if (result.success) {
+          logAuditEvent.mutate({
+            actorType: "admin",
+            actorName: "Admin",
+            action: "PDF_UPLOADED",
+            description: `PDF "${title.trim()}" uploaded and assigned to ${selectedFacultyIds.length} faculty`,
+          });
           setTitle("");
           setSelectedFile(null);
           setSelectedFacultyIds([]);

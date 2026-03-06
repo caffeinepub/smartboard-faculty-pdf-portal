@@ -24,9 +24,14 @@ import {
 import { motion } from "motion/react";
 import type React from "react";
 import { useState } from "react";
+import FacultyAIAssistant from "../components/FacultyAIAssistant";
 import FacultyPDFList from "../components/FacultyPDFList";
 import { useFacultyAuth } from "../context/FacultyAuthContext";
-import { useAllDepartments, useFacultyLogin } from "../hooks/useQueries";
+import {
+  useAllDepartments,
+  useFacultyLogin,
+  useLogAuditEvent,
+} from "../hooks/useQueries";
 
 function FacultyLoginScreen() {
   const [username, setUsername] = useState("");
@@ -36,6 +41,7 @@ function FacultyLoginScreen() {
 
   const { loginFaculty } = useFacultyAuth();
   const loginMutation = useFacultyLogin();
+  const logAuditEvent = useLogAuditEvent();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +58,12 @@ function FacultyLoginScreen() {
     });
     if (faculty) {
       loginFaculty(faculty);
+      logAuditEvent.mutate({
+        actorType: "faculty",
+        actorName: faculty.name,
+        action: "LOGIN",
+        description: `Faculty ${faculty.name} logged in`,
+      });
     } else {
       setError(
         "Invalid username or password. Contact your admin for login credentials.",
@@ -259,6 +271,9 @@ function FacultyDashboard() {
           facultyName={loggedInFaculty.name}
         />
       </div>
+
+      {/* AI Assistant */}
+      <FacultyAIAssistant />
     </div>
   );
 }

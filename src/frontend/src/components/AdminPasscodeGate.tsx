@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   Eye,
@@ -17,6 +18,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   hasAdminCredentialsSet,
   setAdminCredentialsLocal,
+  useLogAuditEvent,
   verifyAdminCredentials,
 } from "../hooks/useQueries";
 
@@ -240,7 +242,7 @@ function LoginForm({
   onSuccess,
   onBack,
 }: {
-  onSuccess: () => void;
+  onSuccess: (username: string) => void;
   onBack: () => void;
 }) {
   const [username, setUsername] = useState("");
@@ -256,7 +258,7 @@ function LoginForm({
     try {
       const isValid = verifyAdminCredentials(username, password);
       if (isValid) {
-        onSuccess();
+        onSuccess(username);
       } else {
         setError("Invalid username or password. Please try again.");
       }
@@ -379,6 +381,7 @@ export default function AdminPasscodeGate({
     null,
   );
   const [view, setView] = useState<GateView>("landing");
+  const logAuditEvent = useLogAuditEvent();
 
   // Check session and credential existence on mount
   // Check both sessionStorage (tab-level) and localStorage (persistent across tabs/restarts)
@@ -430,10 +433,16 @@ export default function AdminPasscodeGate({
   if (view === "login") {
     return (
       <LoginForm
-        onSuccess={() => {
+        onSuccess={(username) => {
           sessionStorage.setItem(SESSION_KEY, "true");
           localStorage.setItem(PERSIST_KEY, "true");
           setIsAuthenticated(true);
+          logAuditEvent.mutate({
+            actorType: "admin",
+            actorName: username || "Admin",
+            action: "LOGIN",
+            description: "Admin logged in to the portal",
+          });
         }}
         onBack={() => setView("landing")}
       />

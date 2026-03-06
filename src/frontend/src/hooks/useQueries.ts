@@ -969,3 +969,99 @@ export function useUpdateFacultyDepartment() {
     },
   });
 }
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: number;
+  timestamp: number; // Date.now()
+  actorType: "admin" | "faculty" | "developer";
+  actorName: string; // faculty name, "Admin", or "Developer"
+  action: string; // e.g. "LOGIN", "PDF_OPEN", "PDF_TAUGHT", "FACULTY_CREATED", "PDF_UPLOADED"
+  description: string; // human-readable sentence
+  ipAddress: string; // fetched or "Unknown"
+  deviceFingerprint?: string;
+}
+
+const AUDIT_LOG_KEY = "eduboard_audit_log";
+const IP_CACHE_KEY = "eduboard_client_ip";
+
+function loadAuditLog(): AuditLogEntry[] {
+  try {
+    const raw = localStorage.getItem(AUDIT_LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAuditLog(list: AuditLogEntry[]): void {
+  // Keep only last 1000 entries to prevent unbounded growth
+  const trimmed = list.slice(-1000);
+  localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(trimmed));
+}
+
+function appendAuditLog(entry: AuditLogEntry): void {
+  const list = loadAuditLog();
+  saveAuditLog([...list, entry]);
+}
+
+async function getClientIP(): Promise<string> {
+  // check sessionStorage cache first
+  const cached = sessionStorage.getItem(IP_CACHE_KEY);
+  if (cached) return cached;
+
+  try {
+    const resp = await fetch("https://api.ipify.org?format=json");
+    if (!resp.ok) throw new Error("non-ok response");
+    const data = await resp.json();
+    const ip = (data as { ip?: string }).ip || "Unknown";
+    sessionStorage.setItem(IP_CACHE_KEY, ip);
+    return ip;
+  } catch {
+    return "Unknown";
+  }
+}
+
+export function useAuditLog() {
+  return useQuery<AuditLogEntry[]>({
+    queryKey: ["auditLog"],
+    queryFn: async () => loadAuditLog(),
+    staleTime: 0,
+  });
+}
+
+export interface LogAuditEventParams {
+  actorType: "admin" | "faculty" | "developer";
+  actorName: string;
+  action: string;
+  description: string;
+  deviceFingerprint?: string;
+}
+
+export function useLogAuditEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, LogAuditEventParams>({
+    mutationFn: async (params) => {
+      const ipAddress = await getClientIP();
+      const list = loadAuditLog();
+      const newId =
+        list.length > 0 ? Math.max(...list.map((e) => e.id)) + 1 : 1;
+      const entry: AuditLogEntry = {
+        id: newId,
+        timestamp: Date.now(),
+        actorType: params.actorType,
+        actorName: params.actorName,
+        action: params.action,
+        description: params.description,
+        ipAddress,
+        deviceFingerprint: params.deviceFingerprint,
+      };
+      appendAuditLog(entry);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auditLog"] });
+    },
+  });
+}

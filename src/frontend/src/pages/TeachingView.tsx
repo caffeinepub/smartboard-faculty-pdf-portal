@@ -9,6 +9,7 @@ import AnnotationToolbar, {
 } from "../components/AnnotationToolbar";
 import {
   useAnnotationsByPDF,
+  useLogAuditEvent,
   useMarkAsTaught,
   usePDFsByFaculty,
   useSaveAnnotation,
@@ -58,6 +59,7 @@ export default function TeachingView() {
     useAnnotationsByPDF(pdfIdNum);
   const saveAnnotation = useSaveAnnotation();
   const markAsTaught = useMarkAsTaught();
+  const logAuditEvent = useLogAuditEvent();
 
   const pdf = pdfs.find((p) => p.id === pdfIdNum);
 
@@ -89,6 +91,30 @@ export default function TeachingView() {
       document.head.appendChild(script);
     });
   }, []);
+
+  // Log PDF_OPEN once when pdf data becomes available
+  const pdfOpenLoggedRef = useRef(false);
+  useEffect(() => {
+    if (pdf && !pdfOpenLoggedRef.current) {
+      pdfOpenLoggedRef.current = true;
+      // Derive faculty name from localStorage
+      const facultyList: Array<{ id: number; name: string }> = (() => {
+        try {
+          return JSON.parse(localStorage.getItem("eduboard_faculty") || "[]");
+        } catch {
+          return [];
+        }
+      })();
+      const facultyName =
+        facultyList.find((f) => f.id === facultyIdNum)?.name ?? "Faculty";
+      logAuditEvent.mutate({
+        actorType: "faculty",
+        actorName: facultyName,
+        action: "PDF_OPEN",
+        description: `${facultyName} opened PDF "${pdf.title}"`,
+      });
+    }
+  }, [pdf, facultyIdNum, logAuditEvent]);
 
   // Initialize PDF document when PDF data is available
   useEffect(() => {
@@ -230,6 +256,22 @@ export default function TeachingView() {
     setIsMarkingTaught(true);
     try {
       await markAsTaught.mutateAsync(pdfIdNum);
+      // Log audit event for PDF_TAUGHT
+      const facultyList: Array<{ id: number; name: string }> = (() => {
+        try {
+          return JSON.parse(localStorage.getItem("eduboard_faculty") || "[]");
+        } catch {
+          return [];
+        }
+      })();
+      const facultyName =
+        facultyList.find((f) => f.id === facultyIdNum)?.name ?? "Faculty";
+      logAuditEvent.mutate({
+        actorType: "faculty",
+        actorName: facultyName,
+        action: "PDF_TAUGHT",
+        description: `${facultyName} marked PDF "${pdf?.title ?? "Unknown"}" as taught`,
+      });
     } catch {
       // silently ignore
     } finally {

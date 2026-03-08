@@ -32,12 +32,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <img
-              src="/assets/uploads/RS-logo-2-1.png"
-              alt="RS Logo"
-              className="h-10 w-10 object-contain rounded shadow-sm"
+              src="/assets/uploads/Screenshot-2026-03-07-231232-1.png"
+              alt="EduBoards Logo"
+              className="h-10 w-10 object-contain"
             />
             <span className="font-display font-bold text-lg text-foreground hidden sm:block">
-              Smart Board Portal
+              EduBoards
             </span>
           </Link>
 
@@ -103,12 +103,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 py-6 max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <img
-              src="/assets/uploads/RS-logo-2-1.png"
-              alt="RS Logo"
-              className="h-6 w-6 object-contain rounded"
+              src="/assets/uploads/Screenshot-2026-03-07-231232-1.png"
+              alt="EduBoards Logo"
+              className="h-6 w-6 object-contain"
             />
             <span className="font-display font-semibold text-foreground">
-              Smart Board Portal
+              EduBoards
             </span>
             <span>© {new Date().getFullYear()}</span>
           </div>

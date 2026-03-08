@@ -1,7 +1,7 @@
 {
-  "name": "SmartBoard Faculty PDF Portal",
-  "short_name": "SmartBoard",
-  "description": "Smart Faculty PDF Portal for smart boards — manage teaching materials, annotations, and faculty assignments.",
+  "name": "EduBoards",
+  "short_name": "EduBoards",
+  "description": "EduBoards — manage teaching materials, annotations, and faculty assignments.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -11,25 +11,25 @@
   "categories": ["education", "productivity"],
   "icons": [
     {
-      "src": "/assets/uploads/RS-logo-2-1.png",
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/uploads/RS-logo-2-1.png",
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/assets/uploads/RS-logo-2-1.png",
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/uploads/RS-logo-2-1.png",
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

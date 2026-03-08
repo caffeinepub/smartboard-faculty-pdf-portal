@@ -88,7 +88,7 @@ export default function PWAInstallPrompt() {
                 <Smartphone className="w-5 h-5 text-accent" />
               </div>
               <p className="text-sm font-semibold text-foreground">
-                Install SmartBoard
+                Install EduBoards
               </p>
             </div>
             <button
@@ -144,7 +144,7 @@ export default function PWAInstallPrompt() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground">
-            Install SmartBoard Portal
+            Install EduBoards
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Install on this device for quick access — works offline too.

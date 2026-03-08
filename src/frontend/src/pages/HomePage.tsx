@@ -49,13 +49,13 @@ export default function HomePage() {
         <div className="container mx-auto max-w-4xl text-center space-y-6">
           <div className="flex items-center justify-center mb-4">
             <img
-              src="/assets/uploads/RS-logo-2-1.png"
-              alt="RS Logo"
-              className="h-28 w-28 object-contain rounded-2xl shadow-lg"
+              src="/assets/uploads/Screenshot-2026-03-07-231232-1.png"
+              alt="EduBoards Logo"
+              className="h-28 w-28 object-contain"
             />
           </div>
           <h1 className="font-display text-5xl font-bold leading-tight">
-            Smart Board Portal
+            EduBoards
           </h1>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed">
             A powerful teaching platform for smart boards. Upload PDFs, annotate

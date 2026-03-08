@@ -77,7 +77,7 @@ export default function DeviceLimitBlocker() {
         {/* Plan info */}
         <div className="mt-6 p-3 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
-            <span className="font-semibold">SmartBoard Faculty PDF Portal</span>
+            <span className="font-semibold">EduBoards</span>
             {" — "}
             {plan.label} Plan: {deviceLimit} devices allowed per year
           </p>

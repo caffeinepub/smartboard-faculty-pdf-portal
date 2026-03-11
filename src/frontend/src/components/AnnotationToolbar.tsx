@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
+  Download,
   Eraser,
   Highlighter,
   Image as ImageIcon,
@@ -59,6 +60,7 @@ interface AnnotationToolbarProps {
   fillColor: string;
   onFillColorChange: (color: string) => void;
   onImageSelected: (dataUrl: string) => void;
+  onDownload?: () => void;
 }
 
 const DRAW_TOOLS: {
@@ -130,6 +132,7 @@ export default function AnnotationToolbar({
   fillColor,
   onFillColorChange,
   onImageSelected,
+  onDownload,
 }: AnnotationToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -177,6 +180,23 @@ export default function AnnotationToolbar({
           </TooltipTrigger>
           <TooltipContent>Back to Portal</TooltipContent>
         </Tooltip>
+
+        {onDownload && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDownload}
+                className="touch-target"
+                data-ocid="toolbar.button"
+              >
+                <Download className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Download PDF</TooltipContent>
+          </Tooltip>
+        )}
 
         <Separator orientation="vertical" className="h-8" />
 

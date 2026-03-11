@@ -71,8 +71,20 @@ export default function PDFUploadForm({
     setFormError(null);
   };
 
+  const MAX_PDF_SIZE_MB = 80;
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+    if (file) {
+      const sizeMB = file.size / 1024 / 1024;
+      if (sizeMB > MAX_PDF_SIZE_MB) {
+        setFormError(
+          `PDF file is too large (${sizeMB.toFixed(1)} MB). Maximum allowed size is ${MAX_PDF_SIZE_MB} MB.`,
+        );
+        setSelectedFile(null);
+        e.target.value = "";
+        return;
+      }
+    }
     setSelectedFile(file);
     setFormError(null);
     if (file && !title.trim()) {

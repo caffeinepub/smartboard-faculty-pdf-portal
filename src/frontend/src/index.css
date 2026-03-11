@@ -113,6 +113,7 @@
 
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -125,6 +126,11 @@
     body {
       font-size: 18px;
     }
+  }
+
+  canvas {
+    touch-action: none;
+    -ms-touch-action: none;
   }
 }
 
@@ -142,6 +148,9 @@
   .annotation-canvas {
     cursor: crosshair;
     touch-action: none;
+    -ms-touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .taught-badge {

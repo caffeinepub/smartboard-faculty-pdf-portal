@@ -1,11 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { usePDFsByFaculty } from "@/hooks/useQueries";
+import { downloadPDFFromBase64, getPDFContent } from "@/utils/pdfStorage";
 import { useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
   CheckCircle2,
   ChevronRight,
   Clock,
+  Download,
   FileText,
   Loader2,
 } from "lucide-react";
@@ -100,7 +102,25 @@ export default function FacultyPDFList({
                   </div>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  data-ocid="faculty.pdf.button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const pdfContent = await getPDFContent(pdf.id);
+                    if (pdfContent) {
+                      downloadPDFFromBase64(pdfContent, pdf.title);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors shrink-0"
+                  title="Download PDF"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Download</span>
+                </button>
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+              </div>
             </div>
           </CardContent>
         </Card>

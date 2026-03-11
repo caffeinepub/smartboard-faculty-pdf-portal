@@ -266,6 +266,11 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
   ctx.restore();
 }
 
+type CanvasEvent =
+  | React.PointerEvent<HTMLCanvasElement>
+  | React.MouseEvent<HTMLCanvasElement>
+  | React.TouchEvent<HTMLCanvasElement>;
+
 const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
   (
     {
@@ -339,22 +344,26 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       redrawCanvas();
     }, [redrawCanvas]);
 
-    const getCanvasPoint = (e: React.MouseEvent | React.TouchEvent): Point => {
+    const getCanvasPoint = (e: CanvasEvent): Point => {
       const canvas = canvasRef.current!;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
-      if ("touches" in e) {
+      if ("touches" in e && e.touches.length > 0) {
         const touch = e.touches[0];
         return {
           x: (touch.clientX - rect.left) * scaleX,
           y: (touch.clientY - rect.top) * scaleY,
         };
       }
+      // Handles both PointerEvent and MouseEvent (both have clientX/clientY)
+      const me = e as
+        | React.PointerEvent<HTMLCanvasElement>
+        | React.MouseEvent<HTMLCanvasElement>;
       return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
+        x: (me.clientX - rect.left) * scaleX,
+        y: (me.clientY - rect.top) * scaleY,
       };
     };
 
@@ -369,8 +378,18 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
         "backgroundHighlight",
       ].includes(tool);
 
-    const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const startDrawing = (e: CanvasEvent) => {
       e.preventDefault();
+
+      // Set pointer capture for stylus — keeps tracking even past canvas edge
+      if ("pointerId" in e && canvasRef.current) {
+        try {
+          canvasRef.current.setPointerCapture(
+            (e as React.PointerEvent<HTMLCanvasElement>).pointerId,
+          );
+        } catch {}
+      }
+
       const point = getCanvasPoint(e);
 
       if (activeTool === "text") {
@@ -429,7 +448,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       }
     };
 
-    const continueDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const continueDrawing = (e: CanvasEvent) => {
       if (!isDrawing) return;
       e.preventDefault();
       const point = getCanvasPoint(e);
@@ -482,9 +501,19 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       drawStroke(ctx, tempStroke);
     };
 
-    const endDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const endDrawing = (e: CanvasEvent) => {
       if (!isDrawing) return;
       e.preventDefault();
+
+      // Release pointer capture
+      if ("pointerId" in e && canvasRef.current) {
+        try {
+          canvasRef.current.releasePointerCapture(
+            (e as React.PointerEvent<HTMLCanvasElement>).pointerId,
+          );
+        } catch {}
+      }
+
       setIsDrawing(false);
 
       const endPoint = getCanvasPoint(e);
@@ -611,6 +640,12 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
           width={width || 800}
           height={height || 600}
           className={`absolute inset-0 w-full h-full touch-none ${cursorStyle()}`}
+          style={{ touchAction: "none" }}
+          onPointerDown={startDrawing}
+          onPointerMove={continueDrawing}
+          onPointerUp={endDrawing}
+          onPointerLeave={endDrawing}
+          onPointerCancel={endDrawing}
           onMouseDown={startDrawing}
           onMouseMove={continueDrawing}
           onMouseUp={endDrawing}

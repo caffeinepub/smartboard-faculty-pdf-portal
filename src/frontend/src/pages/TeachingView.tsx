@@ -11,9 +11,11 @@ import {
   useAnnotationsByPDF,
   useLogAuditEvent,
   useMarkAsTaught,
+  usePDFContent,
   usePDFsByFaculty,
   useSaveAnnotation,
 } from "../hooks/useQueries";
+import { downloadPDFFromBase64 } from "../utils/pdfStorage";
 
 // Decode base64 PDF content to a Uint8Array for PDF.js
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -55,6 +57,8 @@ export default function TeachingView() {
 
   const { data: pdfs = [], isLoading: pdfsLoading } =
     usePDFsByFaculty(facultyIdNum);
+  const { data: pdfContent, isLoading: contentLoading } =
+    usePDFContent(pdfIdNum);
   const { data: annotations = [], isLoading: annotationsLoading } =
     useAnnotationsByPDF(pdfIdNum);
   const saveAnnotation = useSaveAnnotation();
@@ -118,7 +122,7 @@ export default function TeachingView() {
 
   // Initialize PDF document when PDF data is available
   useEffect(() => {
-    if (!pdf?.content) return;
+    if (!pdfContent) return;
 
     let cancelled = false;
     setPdfError(null);
@@ -128,7 +132,7 @@ export default function TeachingView() {
     (async () => {
       try {
         const pdfjsLib = await loadPdfJs();
-        const bytes = base64ToUint8Array(pdf.content);
+        const bytes = base64ToUint8Array(pdfContent);
         const loadingTask = pdfjsLib.getDocument({ data: bytes });
         const doc = await loadingTask.promise;
 
@@ -152,7 +156,7 @@ export default function TeachingView() {
     return () => {
       cancelled = true;
     };
-  }, [pdf?.content, loadPdfJs]);
+  }, [pdfContent, loadPdfJs]);
 
   // Render current page whenever pdfDoc or currentPage changes
   useEffect(() => {
@@ -283,7 +287,8 @@ export default function TeachingView() {
     navigate({ to: "/faculty" });
   };
 
-  const isLoading = pdfsLoading || annotationsLoading || pdfRendering;
+  const isLoading =
+    pdfsLoading || annotationsLoading || pdfRendering || contentLoading;
   const pdfNotFound = !pdfsLoading && pdfs.length >= 0 && !pdf;
   const hasError = !isLoading && (pdfError || pdfNotFound);
 
@@ -308,6 +313,11 @@ export default function TeachingView() {
         fillColor={fillColor}
         onFillColorChange={setFillColor}
         onImageSelected={(dataUrl) => setPendingImageData(dataUrl)}
+        onDownload={
+          pdfContent
+            ? () => downloadPDFFromBase64(pdfContent, pdf?.title ?? "document")
+            : undefined
+        }
       />
 
       {/* Auto-save indicator */}

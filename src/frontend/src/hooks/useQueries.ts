@@ -1,3 +1,8 @@
+import {
+  deletePDFContent,
+  getPDFContent,
+  storePDFContent,
+} from "@/utils/pdfStorage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActor } from "./useActor";
 
@@ -30,7 +35,6 @@ export interface PDF {
   uploadDate: number;
   facultyIds: number[];
   taught: boolean;
-  content: string; // base64
 }
 
 export type FacultyRecord = Faculty;
@@ -142,7 +146,9 @@ function saveFaculty(list: Faculty[]): void {
 function loadPDFs(): PDF[] {
   try {
     const raw = localStorage.getItem("eduboard_pdfs");
-    return raw ? JSON.parse(raw) : [];
+    const list = raw ? JSON.parse(raw) : [];
+    // Strip content field to avoid huge localStorage entries (content is in IndexedDB)
+    return list.map(({ content: _content, ...rest }: any) => rest);
   } catch {
     return [];
   }
@@ -719,8 +725,9 @@ export function useUploadPDF() {
         uploadDate: Date.now(),
         facultyIds: selectedFacultyIds,
         taught: false,
-        content: base64Content,
       };
+      // Store content in IndexedDB (not in localStorage)
+      await storePDFContent(newId, base64Content);
       savePDFs([...pdfs, newPDF]);
       return { success: true };
     },
@@ -768,10 +775,24 @@ export function useDeletePDF() {
   return useMutation<void, Error, number>({
     mutationFn: async (pdfId: number) => {
       savePDFs(loadPDFs().filter((p) => p.id !== pdfId));
+      await deletePDFContent(pdfId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pdfs"] });
     },
+  });
+}
+
+// ─── PDF Content (IndexedDB) ─────────────────────────────────────────────────
+
+export function usePDFContent(pdfId: number) {
+  return useQuery<string | null>({
+    queryKey: ["pdf-content", pdfId],
+    queryFn: async () => {
+      return getPDFContent(pdfId);
+    },
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: pdfId > 0,
   });
 }
 

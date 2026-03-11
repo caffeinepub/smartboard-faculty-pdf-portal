@@ -1,0 +1,40 @@
+{
+  "name": "EduBoards",
+  "short_name": "EduBoards",
+  "description": "EduBoards — manage teaching materials, annotations, and faculty assignments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#800020",
+  "theme_color": "#800020",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/uploads/Screenshot-2026-03-07-231232-1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

@@ -29,12 +29,24 @@ export interface FacultyWithPdfCount {
   pdfCount: number;
 }
 
+export interface AcademicYear {
+  id: number;
+  year: string; // e.g. "2024-25"
+}
+
+export interface AcademicFolder {
+  id: number;
+  yearId: number;
+  name: string; // e.g. "Term 1", "Semester 1"
+}
+
 export interface PDF {
   id: number;
   title: string;
   uploadDate: number;
   facultyIds: number[];
   taught: boolean;
+  folderId?: number;
 }
 
 export type FacultyRecord = Faculty;
@@ -195,6 +207,34 @@ function loadAnnotations(pdfId: number): LocalAnnotation[] {
 
 function saveAnnotations(pdfId: number, list: LocalAnnotation[]): void {
   localStorage.setItem(`eduboard_annotations_${pdfId}`, JSON.stringify(list));
+}
+
+// ─── Academic Year & Folder helpers ───
+
+export function loadYears(): AcademicYear[] {
+  try {
+    const raw = localStorage.getItem("eduboard_years");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveYears(list: AcademicYear[]): void {
+  localStorage.setItem("eduboard_years", JSON.stringify(list));
+}
+
+export function loadFolders(): AcademicFolder[] {
+  try {
+    const raw = localStorage.getItem("eduboard_folders");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveFolders(list: AcademicFolder[]): void {
+  localStorage.setItem("eduboard_folders", JSON.stringify(list));
 }
 
 // ─── Local annotation type ───
@@ -564,11 +604,6 @@ export function useAddFaculty() {
       const params: AddFacultyParams =
         typeof input === "string" ? { name: input } : input;
       const list = loadFaculty();
-      const planName = localStorage.getItem("eduboard_plan") || "basic";
-      const plan = PLAN_TIERS.find((p) => p.name === planName) ?? PLAN_TIERS[0];
-      if (list.length >= plan.maxFaculty) {
-        return { __kind__: "limitReached", limit: plan.maxFaculty };
-      }
       const newId =
         list.length > 0 ? Math.max(...list.map((f) => f.id)) + 1 : 1;
       const newFaculty: Faculty = {
@@ -688,6 +723,7 @@ export interface UploadPDFParams {
   title: string;
   base64Content: string;
   selectedFacultyIds: number[];
+  folderId?: number;
 }
 
 export function useUploadPDF() {
@@ -698,16 +734,13 @@ export function useUploadPDF() {
     Error,
     UploadPDFParams
   >({
-    mutationFn: async ({ title, base64Content, selectedFacultyIds }) => {
+    mutationFn: async ({
+      title,
+      base64Content,
+      selectedFacultyIds,
+      folderId,
+    }) => {
       const pdfs = loadPDFs();
-      const planName = localStorage.getItem("eduboard_plan") || "basic";
-      const plan = PLAN_TIERS.find((p) => p.name === planName) ?? PLAN_TIERS[0];
-      if (pdfs.length >= plan.maxPdfs) {
-        return {
-          success: false,
-          error: `PDF limit of ${plan.maxPdfs} reached for your plan.`,
-        };
-      }
       if (!title.trim()) {
         return { success: false, error: "Title is required." };
       }
@@ -725,6 +758,7 @@ export function useUploadPDF() {
         uploadDate: Date.now(),
         facultyIds: selectedFacultyIds,
         taught: false,
+        folderId,
       };
       // Store content in IndexedDB (not in localStorage)
       await storePDFContent(newId, base64Content);
@@ -947,6 +981,119 @@ export function useDeleteDepartment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["departments"] });
       queryClient.invalidateQueries({ queryKey: ["faculty"] });
+    },
+  });
+}
+
+// ─── Academic Years ───────────────────────────────────────────────────────────
+
+export function useAllYears() {
+  return useQuery<AcademicYear[]>({
+    queryKey: ["years"],
+    queryFn: async () => loadYears(),
+    staleTime: 0,
+  });
+}
+
+export function useAddYear() {
+  const queryClient = useQueryClient();
+  return useMutation<AcademicYear, Error, { year: string }>({
+    mutationFn: async ({ year }) => {
+      const list = loadYears();
+      const newId =
+        list.length > 0 ? Math.max(...list.map((y) => y.id)) + 1 : 1;
+      const newYear: AcademicYear = { id: newId, year: year.trim() };
+      saveYears([...list, newYear]);
+      return newYear;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["years"] });
+    },
+  });
+}
+
+export function useDeleteYear() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, number>({
+    mutationFn: async (yearId: number) => {
+      // Get folders in this year
+      const folders = loadFolders();
+      const folderIds = folders
+        .filter((f) => f.yearId === yearId)
+        .map((f) => f.id);
+      // Delete folders
+      saveFolders(folders.filter((f) => f.yearId !== yearId));
+      // Clear folderId from PDFs that were in those folders
+      if (folderIds.length > 0) {
+        savePDFs(
+          loadPDFs().map((p) =>
+            p.folderId && folderIds.includes(p.folderId)
+              ? { ...p, folderId: undefined }
+              : p,
+          ),
+        );
+      }
+      // Delete the year
+      saveYears(loadYears().filter((y) => y.id !== yearId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["years"] });
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
+      queryClient.invalidateQueries({ queryKey: ["pdfs"] });
+    },
+  });
+}
+
+// ─── Academic Folders ─────────────────────────────────────────────────────────
+
+export function useAllFolders() {
+  return useQuery<AcademicFolder[]>({
+    queryKey: ["folders"],
+    queryFn: async () => loadFolders(),
+    staleTime: 0,
+  });
+}
+
+export function useAddFolder() {
+  const queryClient = useQueryClient();
+  return useMutation<AcademicFolder, Error, { yearId: number; name: string }>({
+    mutationFn: async ({ yearId, name }) => {
+      const list = loadFolders();
+      const foldersInYear = list.filter((f) => f.yearId === yearId);
+      if (foldersInYear.length >= 3) {
+        throw new Error("Maximum 3 folders allowed per academic year.");
+      }
+      const newId =
+        list.length > 0 ? Math.max(...list.map((f) => f.id)) + 1 : 1;
+      const newFolder: AcademicFolder = {
+        id: newId,
+        yearId,
+        name: name.trim(),
+      };
+      saveFolders([...list, newFolder]);
+      return newFolder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
+    },
+  });
+}
+
+export function useDeleteFolder() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, number>({
+    mutationFn: async (folderId: number) => {
+      // Clear folderId from PDFs in this folder
+      savePDFs(
+        loadPDFs().map((p) =>
+          p.folderId === folderId ? { ...p, folderId: undefined } : p,
+        ),
+      );
+      saveFolders(loadFolders().filter((f) => f.id !== folderId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
+      queryClient.invalidateQueries({ queryKey: ["pdfs"] });
     },
   });
 }

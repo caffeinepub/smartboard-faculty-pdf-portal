@@ -23,12 +23,3 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </InternetIdentityProvider>
   </QueryClientProvider>,
 );
-
-// Register service worker for PWA support
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js").catch(() => {
-      // SW registration failed silently
-    });
-  });
-}

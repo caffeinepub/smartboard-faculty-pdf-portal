@@ -24,12 +24,10 @@ import {
   AlertCircle,
   BarChart2,
   Building2,
-  CreditCard,
   FileText,
   KeyRound,
   Loader2,
   LogOut,
-  Monitor,
   Plus,
   Settings,
   Shield,
@@ -38,26 +36,23 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
+import AcademicYearFolderSetup from "../components/AcademicYearFolderSetup";
 import AdminPasscodeGate, { LOCK_EVENT } from "../components/AdminPasscodeGate";
 import AuditReportSection from "../components/AuditReportSection";
 import ChangeAdminCredentialsForm from "../components/ChangeAdminCredentialsForm";
 import CreateFacultyModal from "../components/CreateFacultyModal";
 import DepartmentManagementSection from "../components/DepartmentManagementSection";
-import DeviceManagementSection from "../components/DeviceManagementSection";
 import FacultyManagementTable from "../components/FacultyManagementTable";
 import PDFListTable from "../components/PDFListTable";
 import PDFUploadForm from "../components/PDFUploadForm";
-import SubscriptionSection from "../components/SubscriptionSection";
 import UsageReportSection from "../components/UsageReportSection";
 import UserManagementReport from "../components/UserManagementReport";
 import {
   type Faculty,
-  PLAN_TIERS,
   useAddFaculty,
   useAllDepartments,
   useAllFacultyAdmin,
   useAllPDFs,
-  useGetDeviceCount,
   useLogAuditEvent,
 } from "../hooks/useQueries";
 
@@ -97,18 +92,12 @@ function AdminPanelContent() {
   const { data: allFaculty = [] } = useAllFacultyAdmin();
   const { data: pdfs = [] } = useAllPDFs();
   const { data: departments = [] } = useAllDepartments();
-  const { data: deviceCount = 0 } = useGetDeviceCount();
   const addFaculty = useAddFaculty();
   const logAuditEvent = useLogAuditEvent();
 
   const activeFacultyCount = (allFaculty as Faculty[]).filter(
     (f) => f.active,
   ).length;
-  const activePlanName = localStorage.getItem("eduboard_plan") || "basic";
-  const currentPlan =
-    PLAN_TIERS.find((p) => p.name === activePlanName) ?? PLAN_TIERS[0];
-  const isPdfLimitReached = pdfs.length >= currentPlan.maxPdfs;
-
   const handleLockSignOut = () => {
     window.dispatchEvent(new Event(LOCK_EVENT));
   };
@@ -142,10 +131,6 @@ function AdminPanelContent() {
           action: "FACULTY_CREATED",
           description: `Faculty member "${name}" created`,
         });
-      } else if (result.__kind__ === "limitReached") {
-        setFacultyError(
-          `Faculty limit of ${result.limit} reached. Please upgrade your plan.`,
-        );
       } else if (result.__kind__ === "error") {
         setFacultyError(
           result.message || "Failed to add faculty. Please try again.",
@@ -170,19 +155,19 @@ function AdminPanelContent() {
                 Admin Panel
               </h1>
               <p className="text-muted-foreground mt-0.5">
-                Manage departments, faculty members, upload teaching materials,
-                and monitor your subscription.
+                Manage departments, faculty members, and upload teaching
+                materials.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="secondary" className="text-sm px-3 py-1.5">
               <Users className="h-4 w-4 mr-1.5" />
-              {activeFacultyCount} / {currentPlan.maxFaculty} Faculty
+              {activeFacultyCount} Faculty
             </Badge>
             <Badge variant="secondary" className="text-sm px-3 py-1.5">
               <FileText className="h-4 w-4 mr-1.5" />
-              {pdfs.length} / {currentPlan.maxPdfs} PDFs
+              {pdfs.length} PDFs
             </Badge>
             <Button
               variant="outline"
@@ -199,39 +184,59 @@ function AdminPanelContent() {
         {/* Main Tabs */}
         <Tabs defaultValue="faculty" className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="faculty" className="gap-1.5">
+            <TabsTrigger
+              value="faculty"
+              className="gap-1.5"
+              data-ocid="admin.faculty.tab"
+            >
               <Users className="h-4 w-4" />
               Faculty
             </TabsTrigger>
-            <TabsTrigger value="departments" className="gap-1.5">
+            <TabsTrigger
+              value="departments"
+              className="gap-1.5"
+              data-ocid="admin.departments.tab"
+            >
               <Building2 className="h-4 w-4" />
               Departments
             </TabsTrigger>
-            <TabsTrigger value="pdfs" className="gap-1.5">
+            <TabsTrigger
+              value="pdfs"
+              className="gap-1.5"
+              data-ocid="admin.pdfs.tab"
+            >
               <FileText className="h-4 w-4" />
               PDFs
             </TabsTrigger>
-            <TabsTrigger value="subscription" className="gap-1.5">
-              <CreditCard className="h-4 w-4" />
-              Subscription
-            </TabsTrigger>
-            <TabsTrigger value="devices" className="gap-1.5">
-              <Monitor className="h-4 w-4" />
-              Devices
-            </TabsTrigger>
-            <TabsTrigger value="usage-report" className="gap-1.5">
+            <TabsTrigger
+              value="usage-report"
+              className="gap-1.5"
+              data-ocid="admin.usage-report.tab"
+            >
               <BarChart2 className="h-4 w-4" />
               Usage Report
             </TabsTrigger>
-            <TabsTrigger value="audit-report" className="gap-1.5">
+            <TabsTrigger
+              value="audit-report"
+              className="gap-1.5"
+              data-ocid="admin.audit-report.tab"
+            >
               <Shield className="h-4 w-4" />
               Audit Report
             </TabsTrigger>
-            <TabsTrigger value="user-report" className="gap-1.5">
+            <TabsTrigger
+              value="user-report"
+              className="gap-1.5"
+              data-ocid="admin.user-report.tab"
+            >
               <ShieldCheck className="h-4 w-4" />
               User Report
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1.5">
+            <TabsTrigger
+              value="settings"
+              className="gap-1.5"
+              data-ocid="admin.settings.tab"
+            >
               <KeyRound className="h-4 w-4" />
               Settings
             </TabsTrigger>
@@ -261,6 +266,7 @@ function AdminPanelContent() {
                         </Label>
                         <Input
                           id="faculty-name"
+                          data-ocid="faculty.input"
                           value={newFacultyName}
                           onChange={(e) => {
                             setNewFacultyName(e.target.value);
@@ -332,6 +338,7 @@ function AdminPanelContent() {
 
                       <Button
                         type="submit"
+                        data-ocid="faculty.submit_button"
                         disabled={addFaculty.isPending}
                         className="w-full"
                       >
@@ -376,7 +383,10 @@ function AdminPanelContent() {
           {/* PDFs Tab */}
           <TabsContent value="pdfs" className="mt-6 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 space-y-4">
+                {/* Year & Folder Setup — above upload form */}
+                <AcademicYearFolderSetup />
+
                 <Card className="shadow-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl">
@@ -389,7 +399,7 @@ function AdminPanelContent() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <PDFUploadForm disabled={isPdfLimitReached} />
+                    <PDFUploadForm />
                   </CardContent>
                 </Card>
               </div>
@@ -397,20 +407,6 @@ function AdminPanelContent() {
                 <PDFListTable pdfs={pdfs} facultyList={allFaculty} />
               </div>
             </div>
-          </TabsContent>
-
-          {/* Subscription Tab */}
-          <TabsContent value="subscription" className="mt-6">
-            <SubscriptionSection
-              facultyCount={activeFacultyCount}
-              pdfCount={pdfs.length}
-              deviceCount={Number(deviceCount)}
-            />
-          </TabsContent>
-
-          {/* Devices Tab */}
-          <TabsContent value="devices" className="mt-6">
-            <DeviceManagementSection />
           </TabsContent>
 
           {/* Usage Report Tab */}

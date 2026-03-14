@@ -248,7 +248,6 @@ export default function SubscriptionSection({
     await new Promise((r) => setTimeout(r, 1200));
 
     const plan = PLAN_TIERS.find((p) => p.name === selectedPlan);
-    const price = PLAN_PRICES[selectedPlan][billingCycle];
     const cycleLabel =
       BILLING_CYCLES.find((c) => c.key === billingCycle)?.label ?? "";
     const payModeLabel =
@@ -263,8 +262,10 @@ export default function SubscriptionSection({
       year: "numeric",
     });
 
-    const gst = Math.round(price * 0.18);
-    const total = price + gst;
+    const userCount = (facultyCount || 0) + 1; // +1 for admin
+    const invoiceTotal = userCount * 2500; // ₹2,500 per user inclusive of GST
+    const gst = Math.round((invoiceTotal * 18) / 118);
+    const baseAmount = invoiceTotal - gst;
 
     setSubscription({ tier: selectedPlan });
     setProcessing(false);
@@ -279,9 +280,9 @@ export default function SubscriptionSection({
       devices: plan?.maxDevices ?? 0,
       faculty: plan?.maxFaculty ?? 0,
       pdfs: plan?.maxPdfs ?? 0,
-      baseAmount: price,
+      baseAmount,
       gst,
-      total,
+      total: invoiceTotal,
       paymentMode: payModeLabel,
       txnRef: txnRef || "-",
     });
@@ -289,7 +290,7 @@ export default function SubscriptionSection({
     setTimeout(() => {
       setInvoiceOpen(true);
       toast.success(
-        `Subscribed to ${plan?.label} (${cycleLabel}) — ₹${total.toLocaleString("en-IN")}`,
+        `Subscribed to ${plan?.label} (${cycleLabel}) — ₹${invoiceTotal.toLocaleString("en-IN")}`,
       );
     }, 200);
   };
@@ -307,7 +308,6 @@ export default function SubscriptionSection({
         {PLAN_TIERS.map((plan) => {
           const tier = plan.name as PlanName;
           const isActive = subscription.tier === tier;
-          const price = PLAN_PRICES[tier].yearly;
 
           return (
             <Card
@@ -344,10 +344,10 @@ export default function SubscriptionSection({
                 </div>
                 <div className="mt-1">
                   <span className="text-2xl font-bold text-foreground">
-                    ₹{price.toLocaleString("en-IN")}
+                    ₹2,500
                   </span>
                   <span className="text-muted-foreground text-sm ml-1">
-                    /year
+                    /user (incl. GST)
                   </span>
                 </div>
               </CardHeader>
@@ -476,11 +476,11 @@ export default function SubscriptionSection({
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-primary">
-                  ₹{selectedPrice.toLocaleString("en-IN")}
+                <div className="text-lg font-bold text-primary">
+                  ₹{(((facultyCount || 0) + 1) * 2500).toLocaleString("en-IN")}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {BILLING_CYCLES.find((c) => c.key === billingCycle)?.label}
+                  ₹2,500 × {(facultyCount || 0) + 1} users (incl. GST)
                 </div>
               </div>
             </div>
@@ -963,26 +963,29 @@ export default function SubscriptionSection({
                       </tr>
                       <tr className="border-t border-border">
                         <td className="p-3 text-muted-foreground">
-                          Devices Allowed
+                          Total Users
                         </td>
                         <td className="p-3 text-right font-medium text-foreground">
-                          {invoiceData.devices} devices
+                          {invoiceData.faculty + 1} users
                         </td>
                       </tr>
                       <tr className="border-t border-border">
                         <td className="p-3 text-muted-foreground">
-                          Faculty Allowed
+                          Price per User
                         </td>
                         <td className="p-3 text-right font-medium text-foreground">
-                          {invoiceData.faculty} faculty
+                          ₹2,500 (incl. GST)
                         </td>
                       </tr>
                       <tr className="border-t border-border">
                         <td className="p-3 text-muted-foreground">
-                          PDFs Allowed
+                          Users × Rate
                         </td>
-                        <td className="p-3 text-right font-medium text-foreground">
-                          {invoiceData.pdfs.toLocaleString()} PDFs
+                        <td className="p-3 text-right font-medium text-primary">
+                          {invoiceData.faculty + 1} × ₹2,500 = ₹
+                          {((invoiceData.faculty + 1) * 2500).toLocaleString(
+                            "en-IN",
+                          )}
                         </td>
                       </tr>
                     </tbody>

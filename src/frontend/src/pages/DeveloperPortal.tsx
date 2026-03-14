@@ -1,6 +1,9 @@
+import AuditReportSection from "@/components/AuditReportSection";
 import DeveloperPasscodeGate, {
   DEVELOPER_LOCK_EVENT,
 } from "@/components/DeveloperPasscodeGate";
+import UsageReportSection from "@/components/UsageReportSection";
+import UserManagementReport from "@/components/UserManagementReport";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -1112,7 +1115,7 @@ function DeveloperPortalContent() {
 
         {/* Tabs */}
         <Tabs defaultValue="faculty">
-          <TabsList className="w-full max-w-2xl grid grid-cols-6 bg-slate-800/80 border border-slate-700">
+          <TabsList className="w-full flex flex-wrap gap-1 bg-slate-800/80 border border-slate-700 rounded-lg p-1 h-auto">
             <TabsTrigger
               value="faculty"
               className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
@@ -1149,6 +1152,24 @@ function DeveloperPortalContent() {
             >
               Plan
             </TabsTrigger>
+            <TabsTrigger
+              value="usage-report"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              Usage Report
+            </TabsTrigger>
+            <TabsTrigger
+              value="audit-report"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              Audit Report
+            </TabsTrigger>
+            <TabsTrigger
+              value="user-report"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 text-xs"
+            >
+              User Report
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="faculty" className="mt-6">
@@ -1168,6 +1189,21 @@ function DeveloperPortalContent() {
           </TabsContent>
           <TabsContent value="subscription" className="mt-6">
             <SubscriptionTab />
+          </TabsContent>
+          <TabsContent value="usage-report" className="mt-6">
+            <div className="bg-white rounded-xl p-4">
+              <UsageReportSection />
+            </div>
+          </TabsContent>
+          <TabsContent value="audit-report" className="mt-6">
+            <div className="bg-white rounded-xl p-4">
+              <AuditReportSection />
+            </div>
+          </TabsContent>
+          <TabsContent value="user-report" className="mt-6">
+            <div className="bg-white rounded-xl p-4">
+              <UserManagementReport />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

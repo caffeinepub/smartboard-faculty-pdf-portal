@@ -111,10 +111,6 @@ export default function CreateFacultyModal({
 
       if (result.__kind__ === "success") {
         onOpenChange(false);
-      } else if (result.__kind__ === "limitReached") {
-        setError(
-          `Faculty limit of ${result.limit} reached. Please upgrade your plan.`,
-        );
       } else if (result.__kind__ === "error") {
         setError(result.message || "Failed to create faculty member.");
       }

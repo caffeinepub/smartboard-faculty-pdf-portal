@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Building2,
   FileText,
+  FolderOpen,
   Loader2,
   Upload,
   Users,
@@ -25,6 +26,8 @@ import {
   type Faculty,
   useAllDepartments,
   useAllFacultyAdmin,
+  useAllFolders,
+  useAllYears,
   useLogAuditEvent,
   useUploadPDF,
 } from "../hooks/useQueries";
@@ -46,12 +49,20 @@ export default function PDFUploadForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [assignMode, setAssignMode] = useState<AssignMode>("individual");
   const [selectedDeptId, setSelectedDeptId] = useState<string>("");
+  const [selectedYearId, setSelectedYearId] = useState<string>("");
+  const [selectedFolderId, setSelectedFolderId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: facultyList = [], isLoading: facultyLoading } =
     useAllFacultyAdmin();
   const { data: departments = [] } = useAllDepartments();
+  const { data: years = [] } = useAllYears();
+  const { data: allFolders = [] } = useAllFolders();
   const activeFaculty = (facultyList as Faculty[]).filter((f) => f.active);
+
+  const foldersForYear = selectedYearId
+    ? allFolders.filter((f) => f.yearId === Number(selectedYearId))
+    : [];
 
   const uploadMutation = useUploadPDF();
   const logAuditEvent = useLogAuditEvent();
@@ -110,13 +121,6 @@ export default function PDFUploadForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
-
-    if (disabled) {
-      setFormError(
-        "PDF upload limit reached for your current plan. Please upgrade.",
-      );
-      return;
-    }
     if (!title.trim()) {
       setFormError("Please enter a title for the PDF.");
       return;
@@ -137,10 +141,16 @@ export default function PDFUploadForm({
       const base64Content = (event.target?.result as string) || "";
 
       try {
+        const folderId =
+          selectedFolderId && selectedFolderId !== "none"
+            ? Number(selectedFolderId)
+            : undefined;
+
         const result = await uploadMutation.mutateAsync({
           title: title.trim(),
           base64Content,
           selectedFacultyIds,
+          folderId,
         });
 
         if (result.success) {
@@ -154,6 +164,8 @@ export default function PDFUploadForm({
           setSelectedFile(null);
           setSelectedFacultyIds([]);
           setSelectedDeptId("");
+          setSelectedYearId("");
+          setSelectedFolderId("");
           if (fileInputRef.current) fileInputRef.current.value = "";
           onSuccess?.();
         } else {
@@ -194,6 +206,7 @@ export default function PDFUploadForm({
         </Label>
         <Input
           id="pdf-title"
+          data-ocid="pdf.input"
           type="text"
           placeholder="Enter a descriptive title..."
           value={title}
@@ -206,6 +219,70 @@ export default function PDFUploadForm({
         />
       </div>
 
+      {/* Academic Year */}
+      <div className="space-y-1.5">
+        <Label
+          htmlFor="pdf-year"
+          className="text-sm font-medium flex items-center gap-1.5"
+        >
+          <FolderOpen className="h-3.5 w-3.5" />
+          Academic Year{" "}
+          <span className="text-muted-foreground text-xs">(optional)</span>
+        </Label>
+        <Select
+          value={selectedYearId}
+          onValueChange={(v) => {
+            setSelectedYearId(v);
+            setSelectedFolderId("");
+          }}
+          disabled={isSubmitting || disabled}
+        >
+          <SelectTrigger id="pdf-year" data-ocid="pdf.select">
+            <SelectValue placeholder="Select academic year..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No year</SelectItem>
+            {years.map((y) => (
+              <SelectItem key={y.id} value={String(y.id)}>
+                {y.year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Folder (only shown when year selected) */}
+      {selectedYearId && selectedYearId !== "none" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="pdf-folder" className="text-sm font-medium">
+            Folder{" "}
+            <span className="text-muted-foreground text-xs">(optional)</span>
+          </Label>
+          <Select
+            value={selectedFolderId}
+            onValueChange={setSelectedFolderId}
+            disabled={isSubmitting || disabled}
+          >
+            <SelectTrigger id="pdf-folder">
+              <SelectValue placeholder="Select folder..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No folder</SelectItem>
+              {foldersForYear.map((folder) => (
+                <SelectItem key={folder.id} value={String(folder.id)}>
+                  {folder.name}
+                </SelectItem>
+              ))}
+              {foldersForYear.length === 0 && (
+                <SelectItem value="empty" disabled>
+                  No folders in this year
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* File picker */}
       <div className="space-y-1.5">
         <Label htmlFor="pdf-file" className="text-sm font-medium">
@@ -215,6 +292,7 @@ export default function PDFUploadForm({
           type="button"
           disabled={disabled || isSubmitting}
           aria-label="Select PDF file"
+          data-ocid="pdf.upload_button"
           className={`w-full border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
             disabled || isSubmitting
               ? "opacity-50 cursor-not-allowed border-border"
@@ -238,11 +316,9 @@ export default function PDFUploadForm({
             <div className="flex flex-col items-center gap-1 text-muted-foreground">
               <Upload className="h-8 w-8 mb-1 opacity-50" />
               <p className="text-sm font-medium">
-                {disabled
-                  ? "Upload limit reached"
-                  : "Click to select a PDF file"}
+                {"Click to select a PDF file"}
               </p>
-              {!disabled && <p className="text-xs">PDF files only</p>}
+              <p className="text-xs">PDF files only</p>
             </div>
           )}
         </button>
@@ -404,7 +480,7 @@ export default function PDFUploadForm({
 
       {/* Error display */}
       {formError && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" data-ocid="pdf.error_state">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{formError}</AlertDescription>
         </Alert>
@@ -413,6 +489,7 @@ export default function PDFUploadForm({
       {/* Submit */}
       <Button
         type="submit"
+        data-ocid="pdf.submit_button"
         disabled={isSubmitting || disabled || activeFaculty.length === 0}
         className="w-full"
       >

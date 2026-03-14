@@ -288,6 +288,13 @@ export function setAdminCredentialsLocal(
   localStorage.setItem(ADMIN_CREDS_KEY, JSON.stringify({ username, password }));
 }
 
+export function getAdminCredentialsFull(): {
+  username: string;
+  password: string;
+} | null {
+  return getAdminCredentials();
+}
+
 export function getAdminUsername(): string | null {
   const creds = getAdminCredentials();
   return creds ? creds.username : null;
@@ -632,6 +639,34 @@ export function useUpdateFacultyName() {
       const list = loadFaculty();
       const updated = list.map((f) =>
         f.id === facultyId ? { ...f, name: name.trim() } : f,
+      );
+      saveFaculty(updated);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["faculty"] });
+    },
+  });
+}
+
+/** Update faculty login credentials (username and/or password) */
+export function useUpdateFacultyCredentials() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    void,
+    Error,
+    { facultyId: number; username?: string; password?: string }
+  >({
+    mutationFn: async ({ facultyId, username, password }) => {
+      const list = loadFaculty();
+      const updated = list.map((f) =>
+        f.id === facultyId
+          ? {
+              ...f,
+              ...(username !== undefined ? { username: username.trim() } : {}),
+              ...(password !== undefined ? { password } : {}),
+            }
+          : f,
       );
       saveFaculty(updated);
     },

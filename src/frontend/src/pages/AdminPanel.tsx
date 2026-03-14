@@ -31,7 +31,7 @@ import {
   Plus,
   Settings,
   Shield,
-  ShieldCheck,
+  UserCog,
   Users,
 } from "lucide-react";
 import type React from "react";
@@ -46,7 +46,7 @@ import FacultyManagementTable from "../components/FacultyManagementTable";
 import PDFListTable from "../components/PDFListTable";
 import PDFUploadForm from "../components/PDFUploadForm";
 import UsageReportSection from "../components/UsageReportSection";
-import UserManagementReport from "../components/UserManagementReport";
+import UserManagementSection from "../components/UserManagementSection";
 import {
   type Faculty,
   useAddFaculty,
@@ -225,12 +225,12 @@ function AdminPanelContent() {
               Audit Report
             </TabsTrigger>
             <TabsTrigger
-              value="user-report"
+              value="user-management"
               className="gap-1.5"
-              data-ocid="admin.user-report.tab"
+              data-ocid="admin.user-management.tab"
             >
-              <ShieldCheck className="h-4 w-4" />
-              User Report
+              <UserCog className="h-4 w-4" />
+              User Management
             </TabsTrigger>
             <TabsTrigger
               value="settings"
@@ -419,9 +419,9 @@ function AdminPanelContent() {
             <AuditReportSection />
           </TabsContent>
 
-          {/* User Management Report Tab */}
-          <TabsContent value="user-report" className="mt-6">
-            <UserManagementReport />
+          {/* User Management Tab */}
+          <TabsContent value="user-management" className="mt-6">
+            <UserManagementSection />
           </TabsContent>
 
           {/* Settings Tab */}

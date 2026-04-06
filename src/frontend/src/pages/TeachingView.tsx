@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { AlertCircle, Loader2 } from "lucide-react";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import AnnotationCanvas, {
+  type AnnotationCanvasRef,
   type DrawingStroke,
 } from "../components/AnnotationCanvas";
 import AnnotationToolbar, {
@@ -17,7 +18,6 @@ import {
 } from "../hooks/useQueries";
 import { downloadPDFFromBase64 } from "../utils/pdfStorage";
 
-// Decode base64 PDF content to a Uint8Array for PDF.js
 function base64ToUint8Array(base64: string): Uint8Array {
   const base64Data = base64.includes(",") ? base64.split(",")[1] : base64;
   const binaryString = atob(base64Data);
@@ -54,6 +54,7 @@ export default function TeachingView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<any>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const annotationCanvasRef = useRef<AnnotationCanvasRef>(null);
 
   const { data: pdfs = [], isLoading: pdfsLoading } =
     usePDFsByFaculty(facultyIdNum);
@@ -71,7 +72,6 @@ export default function TeachingView() {
     (a) => a.pageNumber === currentPage,
   );
 
-  // Load PDF.js from CDN dynamically
   const loadPdfJs = useCallback((): Promise<any> => {
     return new Promise((resolve, reject) => {
       if ((window as any).pdfjsLib) {
@@ -96,12 +96,10 @@ export default function TeachingView() {
     });
   }, []);
 
-  // Log PDF_OPEN once when pdf data becomes available
   const pdfOpenLoggedRef = useRef(false);
   useEffect(() => {
     if (pdf && !pdfOpenLoggedRef.current) {
       pdfOpenLoggedRef.current = true;
-      // Derive faculty name from localStorage
       const facultyList: Array<{ id: number; name: string }> = (() => {
         try {
           return JSON.parse(localStorage.getItem("eduboard_faculty") || "[]");
@@ -120,7 +118,6 @@ export default function TeachingView() {
     }
   }, [pdf, facultyIdNum, logAuditEvent]);
 
-  // Initialize PDF document when PDF data is available
   useEffect(() => {
     if (!pdfContent) return;
 
@@ -158,7 +155,6 @@ export default function TeachingView() {
     };
   }, [pdfContent, loadPdfJs]);
 
-  // Render current page whenever pdfDoc or currentPage changes
   useEffect(() => {
     if (!pdfDoc || !pdfCanvasRef.current) return;
 
@@ -260,7 +256,6 @@ export default function TeachingView() {
     setIsMarkingTaught(true);
     try {
       await markAsTaught.mutateAsync(pdfIdNum);
-      // Log audit event for PDF_TAUGHT
       const facultyList: Array<{ id: number; name: string }> = (() => {
         try {
           return JSON.parse(localStorage.getItem("eduboard_faculty") || "[]");
@@ -318,6 +313,7 @@ export default function TeachingView() {
             ? () => downloadPDFFromBase64(pdfContent, pdf?.title ?? "document")
             : undefined
         }
+        onUndo={() => annotationCanvasRef.current?.undo()}
       />
 
       {/* Auto-save indicator */}
@@ -387,13 +383,14 @@ export default function TeachingView() {
               }}
             />
 
-            {/* Annotation overlay — positioned absolutely on top of the PDF canvas */}
+            {/* Annotation overlay */}
             {pdfDoc && canvasSize.width > 0 && (
               <div
                 className="absolute inset-0"
                 style={{ width: canvasSize.width, height: canvasSize.height }}
               >
                 <AnnotationCanvas
+                  ref={annotationCanvasRef}
                   activeTool={activeTool}
                   strokeColor={strokeColor}
                   strokeSize={strokeSize}

@@ -19,17 +19,20 @@ import {
   Image as ImageIcon,
   Minus as LineIcon,
   Minus,
+  MousePointer,
   PaintBucket,
   Pen,
   Plus,
   Square,
   Triangle,
   Type,
+  Undo2,
 } from "lucide-react";
 import type React from "react";
 import { useRef } from "react";
 
 export type AnnotationTool =
+  | "select"
   | "draw"
   | "highlight"
   | "text"
@@ -61,6 +64,7 @@ interface AnnotationToolbarProps {
   onFillColorChange: (color: string) => void;
   onImageSelected: (dataUrl: string) => void;
   onDownload?: () => void;
+  onUndo?: () => void;
 }
 
 const DRAW_TOOLS: {
@@ -68,6 +72,7 @@ const DRAW_TOOLS: {
   icon: React.ElementType;
   label: string;
 }[] = [
+  { id: "select", icon: MousePointer, label: "Select / Move" },
   { id: "draw", icon: Pen, label: "Freehand Draw" },
   { id: "highlight", icon: Highlighter, label: "Highlighter" },
   { id: "text", icon: Type, label: "Text Note" },
@@ -105,13 +110,13 @@ const STROKE_COLORS = [
 ];
 
 const BG_COLORS = [
-  "#fef08a", // yellow
-  "#bbf7d0", // green
-  "#bfdbfe", // blue
-  "#fecaca", // red
-  "#e9d5ff", // purple
-  "#fed7aa", // orange
-  "#f0fdf4", // light green
+  "#fef08a",
+  "#bbf7d0",
+  "#bfdbfe",
+  "#fecaca",
+  "#e9d5ff",
+  "#fed7aa",
+  "#f0fdf4",
 ];
 
 export default function AnnotationToolbar({
@@ -133,6 +138,7 @@ export default function AnnotationToolbar({
   onFillColorChange,
   onImageSelected,
   onDownload,
+  onUndo,
 }: AnnotationToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,12 +162,10 @@ export default function AnnotationToolbar({
       }
     };
     reader.readAsDataURL(file);
-    // Reset so same file can be selected again
     e.target.value = "";
   };
 
   const isColorDisabled = activeTool === "eraser";
-  const _showFillColor = activeTool === "backgroundHighlight";
 
   return (
     <TooltipProvider>
@@ -174,11 +178,28 @@ export default function AnnotationToolbar({
               size="icon"
               onClick={onBack}
               className="touch-target"
+              data-ocid="toolbar.button"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Back to Portal</TooltipContent>
+        </Tooltip>
+
+        {/* Undo Button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onUndo}
+              className="touch-target"
+              data-ocid="toolbar.secondary_button"
+            >
+              <Undo2 className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Undo</TooltipContent>
         </Tooltip>
 
         {onDownload && (
@@ -189,7 +210,7 @@ export default function AnnotationToolbar({
                 size="icon"
                 onClick={onDownload}
                 className="touch-target"
-                data-ocid="toolbar.button"
+                data-ocid="toolbar.download_button"
               >
                 <Download className="h-5 w-5" />
               </Button>
@@ -298,7 +319,7 @@ export default function AnnotationToolbar({
               type="button"
               key={color}
               onClick={() => onStrokeColorChange(color)}
-              className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 flex-shrink-0 ${
+              className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 flex-shrink-0 ${
                 strokeColor === color
                   ? "border-foreground scale-110"
                   : "border-muted"
@@ -312,7 +333,7 @@ export default function AnnotationToolbar({
           <Tooltip>
             <TooltipTrigger asChild>
               <label
-                className={`w-5 h-5 rounded-full border-2 cursor-pointer overflow-hidden flex-shrink-0 transition-transform hover:scale-110 ${
+                className={`w-7 h-7 rounded-full border-2 cursor-pointer overflow-hidden flex-shrink-0 transition-transform hover:scale-110 ${
                   isColorDisabled ? "opacity-40 pointer-events-none" : ""
                 } border-muted`}
                 title="Custom color"
@@ -349,7 +370,7 @@ export default function AnnotationToolbar({
               type="button"
               key={color}
               onClick={() => onFillColorChange(color)}
-              className={`w-5 h-5 rounded border-2 transition-transform hover:scale-110 flex-shrink-0 ${
+              className={`w-7 h-7 rounded border-2 transition-transform hover:scale-110 flex-shrink-0 ${
                 fillColor === color
                   ? "border-foreground scale-110"
                   : "border-muted"
@@ -362,7 +383,7 @@ export default function AnnotationToolbar({
           <Tooltip>
             <TooltipTrigger asChild>
               <label
-                className="w-5 h-5 rounded border-2 cursor-pointer overflow-hidden flex-shrink-0 transition-transform hover:scale-110 border-muted"
+                className="w-7 h-7 rounded border-2 cursor-pointer overflow-hidden flex-shrink-0 transition-transform hover:scale-110 border-muted"
                 title="Custom background color"
               >
                 <input

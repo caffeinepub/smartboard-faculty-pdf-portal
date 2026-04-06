@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import type React from "react";
 import {
   forwardRef,
@@ -44,6 +45,8 @@ interface AnnotationCanvasProps {
 
 export interface AnnotationCanvasRef {
   clearPage: () => void;
+  undo: () => void;
+  deleteSelected: () => void;
 }
 
 function parseAnnotationCoordinates(
@@ -66,6 +69,37 @@ function parseAnnotationCoordinates(
   } catch {
     return null;
   }
+}
+
+function getBoundingBox(stroke: DrawingStroke): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const xs = stroke.points.map((p) => p.x);
+  const ys = stroke.points.map((p) => p.y);
+  if (stroke.endX != null) xs.push(stroke.endX);
+  if (stroke.endY != null) ys.push(stroke.endY);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const imgSize = stroke.tool === "image" ? 300 : 0;
+  return {
+    x: minX - 8,
+    y: minY - 8,
+    w: Math.max(maxX - minX + 16, imgSize),
+    h: Math.max(maxY - minY + 16, imgSize),
+  };
+}
+
+function hitTest(stroke: DrawingStroke, pt: Point): boolean {
+  if (stroke.points.length === 0) return false;
+  const bb = getBoundingBox(stroke);
+  return (
+    pt.x >= bb.x && pt.x <= bb.x + bb.w && pt.y >= bb.y && pt.y <= bb.y + bb.h
+  );
 }
 
 function drawArrowhead(
@@ -266,6 +300,19 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) {
   ctx.restore();
 }
 
+function drawSelectionIndicator(
+  ctx: CanvasRenderingContext2D,
+  stroke: DrawingStroke,
+) {
+  const bb = getBoundingBox(stroke);
+  ctx.save();
+  ctx.strokeStyle = "#2563eb";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
+  ctx.restore();
+}
+
 type CanvasEvent =
   | React.PointerEvent<HTMLCanvasElement>
   | React.MouseEvent<HTMLCanvasElement>
@@ -301,7 +348,16 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
     } | null>(null);
     const [textInput, setTextInput] = useState("");
 
-    // Expose clearPage method
+    // Track in-progress stroke to fix eraser mid-render
+    const inProgressStrokeRef = useRef<DrawingStroke | null>(null);
+
+    // Selection state
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const isDraggingSelectRef = useRef(false);
+    const dragSelectStartRef = useRef<Point | null>(null);
+    const dragStrokeOriginalRef = useRef<DrawingStroke | null>(null);
+
+    // Expose methods
     useImperativeHandle(ref, () => ({
       clearPage: () => {
         setPageStrokes((prev) => {
@@ -309,6 +365,27 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
           next.delete(currentPage);
           return next;
         });
+      },
+      undo: () => {
+        setPageStrokes((prev) => {
+          const next = new Map(prev);
+          const strokes = next.get(currentPage) ?? [];
+          if (strokes.length === 0) return prev;
+          next.set(currentPage, strokes.slice(0, -1));
+          return next;
+        });
+        setSelectedIndex(null);
+      },
+      deleteSelected: () => {
+        if (selectedIndex === null) return;
+        setPageStrokes((prev) => {
+          const next = new Map(prev);
+          const strokes = next.get(currentPage) ?? [];
+          const updated = strokes.filter((_, i) => i !== selectedIndex);
+          next.set(currentPage, updated);
+          return next;
+        });
+        setSelectedIndex(null);
       },
     }));
 
@@ -327,18 +404,38 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
     }, [savedAnnotations]);
 
     // Redraw canvas when page or strokes change
-    const redrawCanvas = useCallback(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+    const redrawCanvas = useCallback(
+      (overrideStrokes?: DrawingStroke[], highlightIndex?: number) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const strokes = pageStrokes.get(currentPage) ?? [];
-      for (const stroke of strokes) {
-        drawStroke(ctx, stroke);
-      }
-    }, [pageStrokes, currentPage]);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const strokes = overrideStrokes ?? pageStrokes.get(currentPage) ?? [];
+        for (const stroke of strokes) {
+          drawStroke(ctx, stroke);
+        }
+
+        // Draw in-progress stroke on top (fixes eraser mid-render)
+        if (inProgressStrokeRef.current) {
+          drawStroke(ctx, inProgressStrokeRef.current);
+        }
+
+        // Draw selection indicator
+        const idxToHighlight =
+          highlightIndex !== undefined ? highlightIndex : selectedIndex;
+        if (
+          idxToHighlight !== null &&
+          idxToHighlight !== undefined &&
+          !isDraggingSelectRef.current
+        ) {
+          const s = strokes[idxToHighlight];
+          if (s) drawSelectionIndicator(ctx, s);
+        }
+      },
+      [pageStrokes, currentPage, selectedIndex],
+    );
 
     useEffect(() => {
       redrawCanvas();
@@ -357,7 +454,6 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
           y: (touch.clientY - rect.top) * scaleY,
         };
       }
-      // Handles both PointerEvent and MouseEvent (both have clientX/clientY)
       const me = e as
         | React.PointerEvent<HTMLCanvasElement>
         | React.MouseEvent<HTMLCanvasElement>;
@@ -367,7 +463,6 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       };
     };
 
-    // Shape tools that use start/end drag
     const isShapeTool = (tool: AnnotationTool) =>
       [
         "rectangle",
@@ -381,7 +476,6 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
     const startDrawing = (e: CanvasEvent) => {
       e.preventDefault();
 
-      // Set pointer capture for stylus — keeps tracking even past canvas edge
       if ("pointerId" in e && canvasRef.current) {
         try {
           canvasRef.current.setPointerCapture(
@@ -392,13 +486,33 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
 
       const point = getCanvasPoint(e);
 
+      // Select tool: hit test strokes
+      if (activeTool === "select") {
+        const strokes = pageStrokes.get(currentPage) ?? [];
+        let hitIdx: number | null = null;
+        for (let i = strokes.length - 1; i >= 0; i--) {
+          if (hitTest(strokes[i], point)) {
+            hitIdx = i;
+            break;
+          }
+        }
+        if (hitIdx !== null) {
+          setSelectedIndex(hitIdx);
+          isDraggingSelectRef.current = true;
+          dragSelectStartRef.current = point;
+          dragStrokeOriginalRef.current = { ...strokes[hitIdx] };
+        } else {
+          setSelectedIndex(null);
+        }
+        return;
+      }
+
       if (activeTool === "text") {
         setPendingText(point);
         setTextInput("");
         return;
       }
 
-      // Image tool: place image at click point
       if (activeTool === "image" && pendingImageData) {
         const stroke: DrawingStroke = {
           tool: "image",
@@ -449,6 +563,43 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
     };
 
     const continueDrawing = (e: CanvasEvent) => {
+      // Handle select/drag
+      if (activeTool === "select") {
+        if (!isDraggingSelectRef.current || selectedIndex === null) return;
+        e.preventDefault();
+        const point = getCanvasPoint(e);
+        const origin = dragSelectStartRef.current;
+        const original = dragStrokeOriginalRef.current;
+        if (!origin || !original) return;
+
+        const dx = point.x - origin.x;
+        const dy = point.y - origin.y;
+
+        const movedStroke: DrawingStroke = {
+          ...original,
+          points: original.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+          endX: original.endX != null ? original.endX + dx : undefined,
+          endY: original.endY != null ? original.endY + dy : undefined,
+        };
+
+        const strokes = pageStrokes.get(currentPage) ?? [];
+        const previewStrokes = strokes.map((s, i) =>
+          i === selectedIndex ? movedStroke : s,
+        );
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const s of previewStrokes) {
+          drawStroke(ctx, s);
+        }
+        drawSelectionIndicator(ctx, movedStroke);
+        return;
+      }
+
       if (!isDrawing) return;
       e.preventDefault();
       const point = getCanvasPoint(e);
@@ -483,6 +634,32 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
 
       currentStrokeRef.current.push(point);
 
+      // Update in-progress stroke ref for consistent redraws
+      inProgressStrokeRef.current = {
+        tool: activeTool,
+        points: [...currentStrokeRef.current],
+        color: strokeColor,
+        size: strokeSize,
+        page: currentPage,
+      };
+
+      // For eraser: do a full redraw on every move for accuracy
+      if (activeTool === "eraser") {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const strokes = pageStrokes.get(currentPage) ?? [];
+        for (const stroke of strokes) {
+          drawStroke(ctx, stroke);
+        }
+        // Draw the eraser stroke on top
+        drawStroke(ctx, inProgressStrokeRef.current);
+        return;
+      }
+
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -502,10 +679,39 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
     };
 
     const endDrawing = (e: CanvasEvent) => {
+      // Handle select drag end
+      if (activeTool === "select") {
+        if (!isDraggingSelectRef.current || selectedIndex === null) return;
+        e.preventDefault();
+        const point = getCanvasPoint(e);
+        const origin = dragSelectStartRef.current;
+        const original = dragStrokeOriginalRef.current;
+        if (origin && original) {
+          const dx = point.x - origin.x;
+          const dy = point.y - origin.y;
+          const movedStroke: DrawingStroke = {
+            ...original,
+            points: original.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+            endX: original.endX != null ? original.endX + dx : undefined,
+            endY: original.endY != null ? original.endY + dy : undefined,
+          };
+          setPageStrokes((prev) => {
+            const next = new Map(prev);
+            const strokes = next.get(currentPage) ?? [];
+            const updated = strokes.map((s, i) =>
+              i === selectedIndex ? movedStroke : s,
+            );
+            next.set(currentPage, updated);
+            return next;
+          });
+        }
+        isDraggingSelectRef.current = false;
+        return;
+      }
+
       if (!isDrawing) return;
       e.preventDefault();
 
-      // Release pointer capture
       if ("pointerId" in e && canvasRef.current) {
         try {
           canvasRef.current.releasePointerCapture(
@@ -515,6 +721,7 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
       }
 
       setIsDrawing(false);
+      inProgressStrokeRef.current = null;
 
       const endPoint = getCanvasPoint(e);
 
@@ -622,6 +829,8 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
 
     const cursorStyle = (): string => {
       switch (activeTool) {
+        case "select":
+          return "cursor-default";
         case "eraser":
           return "cursor-cell";
         case "text":
@@ -632,6 +841,13 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
           return "cursor-crosshair";
       }
     };
+
+    // Compute delete button position for selected stroke
+    const selectedStroke =
+      selectedIndex !== null
+        ? (pageStrokes.get(currentPage) ?? [])[selectedIndex]
+        : null;
+    const selectionBB = selectedStroke ? getBoundingBox(selectedStroke) : null;
 
     return (
       <div className="relative w-full h-full">
@@ -654,6 +870,38 @@ const AnnotationCanvas = forwardRef<AnnotationCanvasRef, AnnotationCanvasProps>(
           onTouchMove={continueDrawing}
           onTouchEnd={endDrawing}
         />
+
+        {/* Floating delete button for selected stroke */}
+        {activeTool === "select" &&
+          selectedIndex !== null &&
+          !isDraggingSelectRef.current &&
+          selectionBB && (
+            <button
+              type="button"
+              data-ocid="annotation.delete_button"
+              onClick={() => {
+                setPageStrokes((prev) => {
+                  const next = new Map(prev);
+                  const strokes = next.get(currentPage) ?? [];
+                  next.set(
+                    currentPage,
+                    strokes.filter((_, i) => i !== selectedIndex),
+                  );
+                  return next;
+                });
+                setSelectedIndex(null);
+              }}
+              className="absolute z-20 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors"
+              style={{
+                left: selectionBB.x + selectionBB.w,
+                top: selectionBB.y,
+                transform: "translate(-50%, -50%)",
+              }}
+              title="Delete selected"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
 
         {/* Text input overlay */}
         {pendingText && (
